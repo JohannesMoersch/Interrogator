@@ -6,7 +6,7 @@ using Xunit.Sdk;
 
 namespace Xunit.IntegrationTest
 {
-	internal class CombinationTestFrameworkDiscoverer : ITestFrameworkDiscoverer
+	internal class CombinationTestFrameworkDiscoverer : LongLivedMarshalByRefObject, ITestFrameworkDiscoverer
 	{
 		public CombinationTestFrameworkDiscoverer(IAssemblyInfo assemblyInfo, ISourceInformationProvider sourceProvider, IMessageSink diagnosticMessageSink)
 		{
@@ -29,14 +29,55 @@ namespace Xunit.IntegrationTest
 
 		public void Find(bool includeSourceInformation, IMessageSink discoveryMessageSink, ITestFrameworkDiscoveryOptions discoveryOptions)
 		{
-			_integrationTestFrameworkDiscoverer.Find(includeSourceInformation, new FilterableMessageSink(discoveryMessageSink, message => !(message is DiscoveryCompleteMessage)), discoveryOptions);
-			_xunitTestFrameworkDiscoverer.Find(includeSourceInformation, discoveryMessageSink, discoveryOptions);
+			discoveryMessageSink = new Stuff(discoveryMessageSink, "output2.txt");
+
+			_integrationTestFrameworkDiscoverer
+				.Find
+				(
+					includeSourceInformation, 
+					new FilterableMessageSink
+					(
+						discoveryMessageSink, 
+						message =>
+						{
+							if (message is DiscoveryCompleteMessage)
+							{
+								_xunitTestFrameworkDiscoverer.Find(includeSourceInformation, discoveryMessageSink, discoveryOptions);
+
+								return null;
+							}
+							return message;
+						}
+					), 
+					discoveryOptions
+				);
 		}
 
 		public void Find(string typeName, bool includeSourceInformation, IMessageSink discoveryMessageSink, ITestFrameworkDiscoveryOptions discoveryOptions)
 		{
-			_integrationTestFrameworkDiscoverer.Find(typeName, includeSourceInformation, new FilterableMessageSink(discoveryMessageSink, message => !(message is DiscoveryCompleteMessage)), discoveryOptions);
-			_xunitTestFrameworkDiscoverer.Find(typeName, includeSourceInformation, discoveryMessageSink, discoveryOptions);
+			discoveryMessageSink = new Stuff(discoveryMessageSink, $"output-{typeName}.txt");
+
+			_integrationTestFrameworkDiscoverer
+				.Find
+				(
+					typeName,
+					includeSourceInformation,
+					new FilterableMessageSink
+					(
+						discoveryMessageSink,
+						message =>
+						{
+							if (message is DiscoveryCompleteMessage)
+							{
+								_xunitTestFrameworkDiscoverer.Find(typeName, includeSourceInformation, discoveryMessageSink, discoveryOptions);
+
+								return null;
+							}
+							return message;
+						}
+					),
+					discoveryOptions
+				);
 		}
 
 		public string Serialize(ITestCase testCase)

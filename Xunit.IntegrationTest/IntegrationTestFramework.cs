@@ -21,6 +21,6 @@ namespace Xunit.IntegrationTest
 			=> new CombinationTestFrameworkDiscoverer(assembly, SourceInformationProvider, _diagnosticMessageSink);
 
 		public ITestFrameworkExecutor GetExecutor(AssemblyName assemblyName)
-			=> new IntegrationTestFrameworkExecutor(assemblyName, SourceInformationProvider, _diagnosticMessageSink);
+			=> new CombinationTestFrameworkExecutor(assemblyName, SourceInformationProvider, _diagnosticMessageSink);
 	}
 }
