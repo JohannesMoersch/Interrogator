@@ -3,6 +3,10 @@ using Xunit;
 
 namespace Xunit.IntegrationTest.Tests
 {
+	public class TestAttribute : FactAttribute
+	{
+	}
+
 	public class UnitTest1
 	{
 		[IntegrationTest]
@@ -12,6 +16,11 @@ namespace Xunit.IntegrationTest.Tests
 
 		[Fact]
 		public static void Test2()
+		{
+		}
+
+		[IntegrationTest]
+		public static void Test3(int stuff)
 		{
 		}
 	}

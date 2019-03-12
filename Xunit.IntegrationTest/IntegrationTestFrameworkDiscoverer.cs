@@ -35,9 +35,26 @@ namespace Xunit.IntegrationTest
 				var testCollection = new TestCollection(_testAssembly, null, String.Empty);
 				var testClass = new TestClass(testCollection, classInfo.Class);
 				var testMethod = new TestMethod(testClass, method);
-				var testCase = new IntegrationTestCase(discoveryOptions.MethodDisplayOrDefault(), discoveryOptions.MethodDisplayOptionsOrDefault(), testMethod);
 
-				messageBus.QueueMessage(new TestCaseDiscoveryMessage(testCase));
+				var runtimeMethod = method.ToRuntimeMethod();
+
+				var parameterWithoutFromAttribute = runtimeMethod
+					.GetParameters()
+					.FirstOrDefault(p => p.TryGetFromAttribute().Match(_ => false, () => true));
+
+				if (parameterWithoutFromAttribute == null)
+				{
+					var testCase = new IntegrationTestCase(discoveryOptions.MethodDisplayOrDefault(), discoveryOptions.MethodDisplayOptionsOrDefault(), testMethod);
+
+					messageBus.QueueMessage(new TestCaseDiscoveryMessage(testCase));
+				}
+				else
+				{
+					var message = $"Parameter '{parameterWithoutFromAttribute.Name}' on test method '{runtimeMethod.DeclaringType.Name}.{method.Name}' requires a [From] attribute.";
+					var testCase = new ErrorIntegrationTestCase(TestMethodDisplay.ClassAndMethod, TestMethodDisplayOptions.None, testMethod, message);
+
+					messageBus.QueueMessage(new TestCaseDiscoveryMessage(testCase));
+				}
 			}
 
 			return true;

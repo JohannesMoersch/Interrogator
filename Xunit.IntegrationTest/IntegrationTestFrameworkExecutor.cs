@@ -39,12 +39,16 @@ namespace Xunit.IntegrationTest
 
 					//await new ExceptionAggregator().RunAsync(() => test.TestCase.TestMethod.Method.ToRuntimeMethod().Invoke(null, null) as Task);
 
-					messageBus.QueueMessage(new TestPassed(test, 1.0m, "Success!"));
+					if (testCase is ErrorIntegrationTestCase errorTestCase)
+						messageBus.QueueMessage(new TestFailed(test, 0, null, new[] { typeof(InvalidOperationException).FullName }, new[] { errorTestCase.ErrorMessage }, new[] { "" }, new[] { -1 }));
+					else
+						messageBus.QueueMessage(new TestPassed(test, 1.0m, "Success!"));
+
 					messageBus.QueueMessage(new TestFinished(test, 1.0m, "Success!"));
-					messageBus.QueueMessage(new TestCaseFinished(testCase, 1.0m, 1, 0, 0));
-					messageBus.QueueMessage(new TestMethodFinished(new[] { testCase }, testCase.TestMethod, 1.0m, 1, 0, 0));
-					messageBus.QueueMessage(new TestClassFinished(new[] { testCase }, testCase.TestMethod.TestClass, 1.0m, 1, 0, 0));
-					messageBus.QueueMessage(new TestCollectionFinished(new[] { testCase }, testCase.TestMethod.TestClass.TestCollection, 1.0m, 1, 0, 0));
+					messageBus.QueueMessage(new TestCaseFinished(testCase, 1.0m, 1, 1, 0));
+					messageBus.QueueMessage(new TestMethodFinished(new[] { testCase }, testCase.TestMethod, 1.0m, 1, 1, 0));
+					messageBus.QueueMessage(new TestClassFinished(new[] { testCase }, testCase.TestMethod.TestClass, 1.0m, 1, 1, 0));
+					messageBus.QueueMessage(new TestCollectionFinished(new[] { testCase }, testCase.TestMethod.TestClass.TestCollection, 1.0m, 1, 1, 0));
 				}
 				messageBus.QueueMessage(new TestAssemblyFinished(testCases, _testAssembly, 1.0m, 1, 0, 0));
 			}
