@@ -29,7 +29,7 @@ namespace Xunit.IntegrationTest
 				if (method.IsAbstract || method.IsGenericMethodDefinition)
 					continue;
 
-				if (!method.GetCustomAttributes(typeof(IntegrationTestAttribute)).Any())
+				if (!method.IsIntegrationTest())
 					continue;
 
 				var testCollection = new TestCollection(_testAssembly, null, String.Empty);
