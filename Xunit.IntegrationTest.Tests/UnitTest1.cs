@@ -6,8 +6,9 @@ namespace Xunit.IntegrationTest.Tests
 	public class UnitTest1
 	{
 		[IntegrationTest]
-		public static void Test1()
+		public static int Test1()
 		{
+			return 0;
 		}
 
 		[Fact]
@@ -16,7 +17,7 @@ namespace Xunit.IntegrationTest.Tests
 		}
 
 		[IntegrationTest]
-		public static void Test3(int stuff)
+		public static void Test3([From(nameof(Test1))]int stuff)
 		{
 		}
 	}

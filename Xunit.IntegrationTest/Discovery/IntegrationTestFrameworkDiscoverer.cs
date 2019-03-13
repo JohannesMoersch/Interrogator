@@ -40,11 +40,13 @@ namespace Xunit.IntegrationTest.Discovery
 
 				var runtimeMethod = method.ToRuntimeMethod();
 
-				var parameterWithoutFromAttribute = runtimeMethod
+				var error = runtimeMethod
 					.GetParameters()
-					.FirstOrDefault(p => p.TryGetFromAttribute().Match(_ => false, () => true));
+					.Select(p => p.GetFromAttribute())
+					.TakeUntilFailure()
+					.Match(_ => null, _ => _);
 
-				if (parameterWithoutFromAttribute == null)
+				if (error == null)
 				{
 					var testCase = new IntegrationTestCase(discoveryOptions.MethodDisplayOrDefault(), discoveryOptions.MethodDisplayOptionsOrDefault(), testMethod);
 
@@ -52,8 +54,7 @@ namespace Xunit.IntegrationTest.Discovery
 				}
 				else
 				{
-					var message = $"Parameter '{parameterWithoutFromAttribute.Name}' on test method '{runtimeMethod.DeclaringType.Name}.{method.Name}' requires a [From] attribute.";
-					var testCase = new ErrorIntegrationTestCase(TestMethodDisplay.ClassAndMethod, TestMethodDisplayOptions.None, testMethod, message);
+					var testCase = new ErrorIntegrationTestCase(TestMethodDisplay.ClassAndMethod, TestMethodDisplayOptions.None, testMethod, error);
 
 					messageBus.QueueMessage(new TestCaseDiscoveryMessage(testCase));
 				}

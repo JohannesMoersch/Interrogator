@@ -14,11 +14,12 @@ namespace Xunit.IntegrationTest.Common
 				.GetCustomAttributes(typeof(IntegrationTestAttribute))
 				.Any();
 
-		public static Option<FromAttribute> TryGetFromAttribute(this ParameterInfo parameter)
+		public static Result<FromAttribute, string> GetFromAttribute(this ParameterInfo parameter)
 			=> Option
 				.FromNullable(parameter
 					.GetCustomAttributes<FromAttribute>()
 					.FirstOrDefault()
-				);
+				)
+				.ToResult(() => $"Parameter '{parameter.Name}' on test method '{parameter.Member.DeclaringType.Name}.{parameter.Member.Name}' requires a [From] attribute.");
 	}
 }

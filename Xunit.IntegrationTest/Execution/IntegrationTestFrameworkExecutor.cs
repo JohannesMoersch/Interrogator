@@ -29,28 +29,59 @@ namespace Xunit.IntegrationTest.Execution
 				messageBus.QueueMessage(new TestAssemblyStarting(testCases, _testAssembly, DateTime.Now, "Test Environment", "Test Framework Display Name"));
 				foreach (var testCase in testCases)
 				{
-					var test = new Xunit.IntegrationTest.Infrastructure.IntegrationTest(testCase);
+					IntegrationTest
+						.Create(testCase)
+						.Match
+						(
+							test =>
+							{
+								messageBus.QueueMessage(new TestCollectionStarting(new[] { testCase }, testCase.TestMethod.TestClass.TestCollection));
+								messageBus.QueueMessage(new TestClassStarting(new[] { testCase }, testCase.TestMethod.TestClass));
+								messageBus.QueueMessage(new TestMethodStarting(new[] { testCase }, testCase.TestMethod));
+								messageBus.QueueMessage(new TestCaseStarting(testCase));
+								messageBus.QueueMessage(new TestStarting(test));
+								messageBus.QueueMessage(new TestClassConstructionStarting(test)); // Only do when not static
+								messageBus.QueueMessage(new TestClassConstructionFinished(test)); // Only do when not static
 
-					messageBus.QueueMessage(new TestCollectionStarting(new[] { testCase }, testCase.TestMethod.TestClass.TestCollection));
-					messageBus.QueueMessage(new TestClassStarting(new[] { testCase }, testCase.TestMethod.TestClass));
-					messageBus.QueueMessage(new TestMethodStarting(new[] { testCase }, testCase.TestMethod));
-					messageBus.QueueMessage(new TestCaseStarting(testCase));
-					messageBus.QueueMessage(new TestStarting(test));
-					messageBus.QueueMessage(new TestClassConstructionStarting(test)); // Only do when not static
-					messageBus.QueueMessage(new TestClassConstructionFinished(test)); // Only do when not static
+								//await new ExceptionAggregator().RunAsync(() => test.TestCase.TestMethod.Method.ToRuntimeMethod().Invoke(null, null) as Task);
 
-					//await new ExceptionAggregator().RunAsync(() => test.TestCase.TestMethod.Method.ToRuntimeMethod().Invoke(null, null) as Task);
+								messageBus.QueueMessage(new TestPassed(test, 1.0m, "Success!"));
 
-					if (testCase is ErrorIntegrationTestCase errorTestCase)
-						messageBus.QueueMessage(new TestFailed(test, 0, null, new[] { typeof(InvalidOperationException).FullName }, new[] { errorTestCase.ErrorMessage }, new[] { "" }, new[] { -1 }));
-					else
-						messageBus.QueueMessage(new TestPassed(test, 1.0m, "Success!"));
+								messageBus.QueueMessage(new TestFinished(test, 1.0m, "Success!"));
+								messageBus.QueueMessage(new TestCaseFinished(testCase, 1.0m, 1, 1, 0));
+								messageBus.QueueMessage(new TestMethodFinished(new[] { testCase }, testCase.TestMethod, 1.0m, 1, 1, 0));
+								messageBus.QueueMessage(new TestClassFinished(new[] { testCase }, testCase.TestMethod.TestClass, 1.0m, 1, 1, 0));
+								messageBus.QueueMessage(new TestCollectionFinished(new[] { testCase }, testCase.TestMethod.TestClass.TestCollection, 1.0m, 1, 1, 0));
 
-					messageBus.QueueMessage(new TestFinished(test, 1.0m, "Success!"));
-					messageBus.QueueMessage(new TestCaseFinished(testCase, 1.0m, 1, 1, 0));
-					messageBus.QueueMessage(new TestMethodFinished(new[] { testCase }, testCase.TestMethod, 1.0m, 1, 1, 0));
-					messageBus.QueueMessage(new TestClassFinished(new[] { testCase }, testCase.TestMethod.TestClass, 1.0m, 1, 1, 0));
-					messageBus.QueueMessage(new TestCollectionFinished(new[] { testCase }, testCase.TestMethod.TestClass.TestCollection, 1.0m, 1, 1, 0));
+								return 0;
+							},
+							error =>
+							{
+								var test = new ErrorIntegrationTest(testCase);
+
+								messageBus.QueueMessage(new TestCollectionStarting(new[] { testCase }, testCase.TestMethod.TestClass.TestCollection));
+								messageBus.QueueMessage(new TestClassStarting(new[] { testCase }, testCase.TestMethod.TestClass));
+								messageBus.QueueMessage(new TestMethodStarting(new[] { testCase }, testCase.TestMethod));
+								messageBus.QueueMessage(new TestCaseStarting(testCase));
+								messageBus.QueueMessage(new TestStarting(test));
+								messageBus.QueueMessage(new TestClassConstructionStarting(test)); // Only do when not static
+								messageBus.QueueMessage(new TestClassConstructionFinished(test)); // Only do when not static
+
+								//await new ExceptionAggregator().RunAsync(() => test.TestCase.TestMethod.Method.ToRuntimeMethod().Invoke(null, null) as Task);
+
+								messageBus.QueueMessage(new TestFailed(test, 0, null, new[] { typeof(InvalidOperationException).FullName }, new[] { error }, new[] { "" }, new[] { -1 }));
+
+								messageBus.QueueMessage(new TestFinished(test, 1.0m, "Success!"));
+								messageBus.QueueMessage(new TestCaseFinished(testCase, 1.0m, 1, 1, 0));
+								messageBus.QueueMessage(new TestMethodFinished(new[] { testCase }, testCase.TestMethod, 1.0m, 1, 1, 0));
+								messageBus.QueueMessage(new TestClassFinished(new[] { testCase }, testCase.TestMethod.TestClass, 1.0m, 1, 1, 0));
+								messageBus.QueueMessage(new TestCollectionFinished(new[] { testCase }, testCase.TestMethod.TestClass.TestCollection, 1.0m, 1, 1, 0));
+
+								return 0;
+							}
+						);
+
+					
 				}
 				messageBus.QueueMessage(new TestAssemblyFinished(testCases, _testAssembly, 1.0m, 1, 0, 0));
 			}

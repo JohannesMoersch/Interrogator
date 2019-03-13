@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using Xunit.Abstractions;
 
-namespace Xunit.IntegrationTest.Infrastructure
+namespace Xunit.IntegrationTest.Execution
 {
-	internal class IntegrationTest : LongLivedMarshalByRefObject, ITest
+	internal class ErrorIntegrationTest : LongLivedMarshalByRefObject, ITest
 	{
-		public IntegrationTest(ITestCase testCase)
+		public ErrorIntegrationTest(ITestCase testCase)
 			=> TestCase = testCase;
 
 		public ITestCase TestCase { get; }
