@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Xunit.IntegrationTest
+namespace Xunit.IntegrationTest.Common
 {
 	internal struct Option<TValue> : IEquatable<Option<TValue>>
 	{

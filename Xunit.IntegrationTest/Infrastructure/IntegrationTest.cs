@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Xunit.Abstractions;
 
-namespace Xunit.IntegrationTest
+namespace Xunit.IntegrationTest.Infrastructure
 {
 	internal class IntegrationTest : LongLivedMarshalByRefObject, ITest
 	{

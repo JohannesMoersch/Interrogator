@@ -4,9 +4,11 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Xunit.Abstractions;
+using Xunit.IntegrationTest.Infrastructure;
+using Xunit.IntegrationTest.Utilities;
 using Xunit.Sdk;
 
-namespace Xunit.IntegrationTest
+namespace Xunit.IntegrationTest.Execution
 {
 	internal class CombinationTestFrameworkExecutor : LongLivedMarshalByRefObject, ITestFrameworkExecutor
 	{

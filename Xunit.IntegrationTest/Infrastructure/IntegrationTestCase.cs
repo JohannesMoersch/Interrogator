@@ -4,7 +4,7 @@ using System.Text;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-namespace Xunit.IntegrationTest
+namespace Xunit.IntegrationTest.Infrastructure
 {
 	internal class IntegrationTestCase : TestMethodTestCase
 	{

@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using Xunit.Abstractions;
+using Xunit.IntegrationTest.Discovery;
+using Xunit.IntegrationTest.Infrastructure;
 using Xunit.Sdk;
 
-namespace Xunit.IntegrationTest
+namespace Xunit.IntegrationTest.Execution
 {
 	internal class IntegrationTestFrameworkExecutor : TestFrameworkExecutor<IntegrationTestCase>
 	{
@@ -27,7 +29,7 @@ namespace Xunit.IntegrationTest
 				messageBus.QueueMessage(new TestAssemblyStarting(testCases, _testAssembly, DateTime.Now, "Test Environment", "Test Framework Display Name"));
 				foreach (var testCase in testCases)
 				{
-					var test = new IntegrationTest(testCase);
+					var test = new Xunit.IntegrationTest.Infrastructure.IntegrationTest(testCase);
 
 					messageBus.QueueMessage(new TestCollectionStarting(new[] { testCase }, testCase.TestMethod.TestClass.TestCollection));
 					messageBus.QueueMessage(new TestClassStarting(new[] { testCase }, testCase.TestMethod.TestClass));

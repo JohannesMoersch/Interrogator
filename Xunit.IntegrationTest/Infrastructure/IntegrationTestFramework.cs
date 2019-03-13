@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using Xunit.Abstractions;
+using Xunit.IntegrationTest.Discovery;
+using Xunit.IntegrationTest.Execution;
 
-namespace Xunit.IntegrationTest
+namespace Xunit.IntegrationTest.Infrastructure
 {
 	internal class IntegrationTestFramework : LongLivedMarshalByRefObject, ITestFramework
 	{

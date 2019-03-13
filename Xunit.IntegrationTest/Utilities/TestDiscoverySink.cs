@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
 
-namespace Xunit.IntegrationTest
+namespace Xunit.IntegrationTest.Utilities
 {
 	internal class TestDiscoverySink : IMessageSink
 	{

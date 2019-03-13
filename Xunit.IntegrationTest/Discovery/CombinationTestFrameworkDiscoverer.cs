@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Text;
 using Xunit.Abstractions;
+using Xunit.IntegrationTest.Common;
+using Xunit.IntegrationTest.Utilities;
 using Xunit.Sdk;
 
-namespace Xunit.IntegrationTest
+namespace Xunit.IntegrationTest.Discovery
 {
 	internal class CombinationTestFrameworkDiscoverer : LongLivedMarshalByRefObject, ITestFrameworkDiscoverer
 	{

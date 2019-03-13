@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using Xunit.Abstractions;
 
-namespace Xunit.IntegrationTest
+namespace Xunit.IntegrationTest.Common
 {
 	internal static class ReflectionExtensions
 	{

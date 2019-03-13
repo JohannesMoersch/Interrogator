@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Xunit.Abstractions;
+using Xunit.IntegrationTest.Common;
+using Xunit.IntegrationTest.Infrastructure;
 using Xunit.Sdk;
 
-namespace Xunit.IntegrationTest
+namespace Xunit.IntegrationTest.Discovery
 {
 	internal class IntegrationTestFrameworkDiscoverer : TestFrameworkDiscoverer
 	{
