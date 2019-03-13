@@ -5,7 +5,7 @@ using Xunit.Abstractions;
 
 namespace Xunit.IntegrationTest
 {
-	public class IntegrationTest : LongLivedMarshalByRefObject, ITest
+	internal class IntegrationTest : LongLivedMarshalByRefObject, ITest
 	{
 		public IntegrationTest(ITestCase testCase)
 			=> TestCase = testCase;

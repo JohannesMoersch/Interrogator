@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace Xunit.IntegrationTest
 {
-	public class TestDiscoverySink : IMessageSink
+	internal class TestDiscoverySink : IMessageSink
 	{
 		private readonly List<ITestCase> _testCases = new List<ITestCase>();
 

@@ -3,10 +3,6 @@ using Xunit;
 
 namespace Xunit.IntegrationTest.Tests
 {
-	public class TestAttribute : FactAttribute
-	{
-	}
-
 	public class UnitTest1
 	{
 		[IntegrationTest]

@@ -8,7 +8,7 @@ using Xunit.Sdk;
 
 namespace Xunit.IntegrationTest
 {
-	public class CombinationTestFrameworkExecutor : LongLivedMarshalByRefObject, ITestFrameworkExecutor
+	internal class CombinationTestFrameworkExecutor : LongLivedMarshalByRefObject, ITestFrameworkExecutor
 	{
 		public CombinationTestFrameworkExecutor(AssemblyName assemblyName, ISourceInformationProvider sourceInformationProvider, IMessageSink diagnosticMessageSink)
 		{
