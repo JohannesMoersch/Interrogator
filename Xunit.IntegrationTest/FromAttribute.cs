@@ -16,20 +16,24 @@ namespace Xunit.IntegrationTest
 
 		private Type[] _parameterTypes;
 
-		public FromAttribute(string methodName) 
-			=> _methodName = methodName ?? String.Empty;
+		public FromAttribute(string methodName)
+			: this(null, methodName, null)
+		{ }
 
 		public FromAttribute(Type type, string methodName)
-			: this(methodName)
-			=> _type = type;
+			: this(type, methodName, null)
+		{ }
 
 		public FromAttribute(string methodName, params Type[] parameterTypes)
-			: this(methodName)
-			=> _parameterTypes = parameterTypes ?? Array.Empty<Type>();
+			: this(null, methodName, parameterTypes)
+		{ }
 
 		public FromAttribute(Type type, string methodName, params Type[] parameterTypes)
-			: this(type, methodName)
-			=> _parameterTypes = parameterTypes ?? Array.Empty<Type>();
+		{
+			_type = type;
+			_methodName = methodName;
+			_parameterTypes = parameterTypes ?? Array.Empty<Type>();
+		}
 
 		internal Result<MethodInfo, string> TryGetMethod(Type containingType)
 			=> Option

@@ -40,7 +40,7 @@ namespace Xunit.IntegrationTest.Execution
 						(
 							parameter.ParameterType.IsAssignableFrom(method.ReturnType),
 							() => method,
-							() => $"Cannot case return type of source method '{method.DeclaringType.Name}.{method.Name}' from '{method.ReturnType.Name}' to '{parameter.ParameterType.Name}' for parameter '{parameter.Name}' on method '{parameter.Member.DeclaringType.Name}.{parameter.Member.Name}'"
+							() => $"Cannot cast return type of source method '{method.DeclaringType.Name}.{method.Name}' from '{method.ReturnType.Name}' to '{parameter.ParameterType.Name}' for parameter '{parameter.Name}' on method '{parameter.Member.DeclaringType.Name}.{parameter.Member.Name}'"
 						)
 					)
 				)

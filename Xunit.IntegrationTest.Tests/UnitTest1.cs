@@ -6,9 +6,8 @@ namespace Xunit.IntegrationTest.Tests
 	public class UnitTest1
 	{
 		[IntegrationTest]
-		public static int Test1()
+		public static void Test1()
 		{
-			return 0;
 		}
 
 		[Fact]
