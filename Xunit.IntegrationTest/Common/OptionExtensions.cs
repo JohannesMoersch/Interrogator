@@ -13,5 +13,8 @@ namespace Xunit.IntegrationTest.Common
 					Result.Success<TValue, TFailure>,
 					() => Result.Failure<TValue, TFailure>(failureFactory.Invoke())
 				);
+
+		public static void Apply<TValue>(this Option<TValue> option, Action<TValue> onSome, Action onNone)
+			=> option.Match(value => { onSome.Invoke(value); return 0; }, () => { onNone.Invoke(); return 0; });
 	}
 }

@@ -44,7 +44,7 @@ namespace Xunit.IntegrationTest.Execution
 			_xunitTestFrameworkExecutor
 				.RunTests
 				(
-					testCases.OfType<XunitTestCase>(), 
+					testCases.Where(testCase => !(testCase is IntegrationTestCase)), 
 					new FilterableMessageSink
 					(
 						executionMessageSink, 

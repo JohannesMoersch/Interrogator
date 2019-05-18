@@ -48,13 +48,13 @@ namespace Xunit.IntegrationTest.Discovery
 
 				if (error == null)
 				{
-					var testCase = new IntegrationTestCase(discoveryOptions.MethodDisplayOrDefault(), discoveryOptions.MethodDisplayOptionsOrDefault(), testMethod);
+					var testCase = new IntegrationTestCase(DiagnosticMessageSink, discoveryOptions.MethodDisplayOrDefault(), discoveryOptions.MethodDisplayOptionsOrDefault(), testMethod);
 
 					messageBus.QueueMessage(new TestCaseDiscoveryMessage(testCase));
 				}
 				else
 				{
-					var testCase = new ErrorIntegrationTestCase(TestMethodDisplay.ClassAndMethod, TestMethodDisplayOptions.None, testMethod, error);
+					var testCase = new ErrorIntegrationTestCase(DiagnosticMessageSink, TestMethodDisplay.ClassAndMethod, TestMethodDisplayOptions.None, testMethod, error);
 
 					messageBus.QueueMessage(new TestCaseDiscoveryMessage(testCase));
 				}

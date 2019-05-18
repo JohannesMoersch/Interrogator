@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Xunit.IntegrationTest.Tests
@@ -6,8 +7,10 @@ namespace Xunit.IntegrationTest.Tests
 	public class UnitTest1
 	{
 		[IntegrationTest]
-		public static void Test1()
+		public static async Task<int> Test1()
 		{
+			await Task.Delay(200);
+			return 1;
 		}
 
 		[Fact]
