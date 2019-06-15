@@ -11,39 +11,31 @@ using Xunit.Sdk;
 
 namespace Xunit.IntegrationTest.Execution
 {
-	internal class IntegrationTestState
+	internal class IntegrationTestState : IJob
 	{
-		public enum TestStatus
-		{
-			NotReady,
-			Ready,
-			NotComplete,
-			Complete
-		}
-
 		private IntegrationTestState(IntegrationTestCase testCase, MethodInfo[] parameterMethods)
 		{
 			TestCase = testCase;
-			Status = parameterMethods.Length == 0 ? TestStatus.Ready : TestStatus.NotReady;
+			Status = parameterMethods.Length == 0 ? ExecutionStatus.Ready : ExecutionStatus.NotReady;
 
-			_parameterMethods = parameterMethods;
+			ParameterMethods = parameterMethods;
 
-			_values = new Option<object>[_parameterMethods.Length];
+			_values = new Option<object>[ParameterMethods.Count];
 		}
 
 		private IntegrationTestState(IntegrationTestCase testCase, string errorMessage)
 		{
 			TestCase = testCase;
-			Status = TestStatus.Ready;
+			Status = ExecutionStatus.Ready;
 
 			_errorMessage = errorMessage ?? String.Empty;
 		}
 
 		public IntegrationTestCase TestCase { get; }
 
-		public TestStatus Status { get; private set; }
+		public ExecutionStatus Status { get; private set; }
 
-		private MethodInfo[] _parameterMethods;
+		public IReadOnlyList<MethodInfo> ParameterMethods { get; }
 
 		private Option<object>[] _values;
 
@@ -51,13 +43,13 @@ namespace Xunit.IntegrationTest.Execution
 
 		public void SetParameter(MethodInfo methodInfo, object value)
 		{
-			if (Status != TestStatus.NotReady)
+			if (Status != ExecutionStatus.NotReady)
 				return;
 
 			bool ready = true;
-			for (int i = 0; i < _parameterMethods.Length; ++i)
+			for (int i = 0; i < ParameterMethods.Count; ++i)
 			{
-				if (_parameterMethods[i] == methodInfo && _values[i] == Option.None<object>())
+				if (ParameterMethods[i] == methodInfo && _values[i] == Option.None<object>())
 					_values[i] = Option.Some(value);
 
 				if (_values[i] == Option.None<object>())
@@ -65,19 +57,17 @@ namespace Xunit.IntegrationTest.Execution
 			}
 
 			if (ready)
-				Status = TestStatus.Ready;
+				Status = ExecutionStatus.Ready;
 		}
 
 		public async Task<object> Execute(IMessageBus messageBus, ExceptionAggregator exceptionAggregator, CancellationTokenSource cancellationTokenSource)
 		{
-			if (Status != TestStatus.Ready)
+			if (Status != ExecutionStatus.Ready)
 				throw new Exception("Test prerequisites not met.");
 
 			var test = new IntegrationTest(TestCase);
 
-			messageBus.QueueMessage(new TestCollectionStarting(new[] { TestCase }, TestCase.TestMethod.TestClass.TestCollection));
-			messageBus.QueueMessage(new TestClassStarting(new[] { TestCase }, TestCase.TestMethod.TestClass));
-			messageBus.QueueMessage(new TestMethodStarting(new[] { TestCase }, TestCase.TestMethod));
+			SendStartMessages(messageBus);
 
 			object returnValue = null;
 
@@ -91,7 +81,7 @@ namespace Xunit.IntegrationTest.Execution
 				messageBus.QueueMessage(new TestFinished(test, 0, null));
 				messageBus.QueueMessage(new TestCaseFinished(TestCase, 0, 1, 1, 0));
 
-				Status = TestStatus.NotComplete;
+				Status = ExecutionStatus.NotComplete;
 			}
 			else
 			{
@@ -103,25 +93,61 @@ namespace Xunit.IntegrationTest.Execution
 						success => success
 							.Apply
 							(
-								value => { returnValue = value; Status = TestStatus.Complete; },
-								() => Status = TestStatus.Complete
+								value => { returnValue = value; Status = ExecutionStatus.Complete; },
+								() => Status = ExecutionStatus.Complete
 							),
-						failure => Status = TestStatus.NotComplete
+						failure => Status = ExecutionStatus.NotComplete
 					);
 			}
 
-			messageBus.QueueMessage(new TestMethodFinished(new[] { TestCase }, TestCase.TestMethod, 0, 1, 1, 0));
-			messageBus.QueueMessage(new TestClassFinished(new[] { TestCase }, TestCase.TestMethod.TestClass, 0, 1, 1, 0));
-			messageBus.QueueMessage(new TestCollectionFinished(new[] { TestCase }, TestCase.TestMethod.TestClass.TestCollection, 0, 1, 1, 0));
+			SendStartMessages(messageBus);
 
 			return returnValue;
 		}
 
-		public Task Abort(IMessageBus messageBus, ExceptionAggregator exceptionAggregator, CancellationTokenSource cancellationTokenSource)
+		private void SendStartMessages(IMessageBus messageBus)
 		{
-			_errorMessage = "Stuff";
+			messageBus.QueueMessage(new TestCollectionStarting(new[] { TestCase }, TestCase.TestMethod.TestClass.TestCollection));
+			messageBus.QueueMessage(new TestClassStarting(new[] { TestCase }, TestCase.TestMethod.TestClass));
+			messageBus.QueueMessage(new TestMethodStarting(new[] { TestCase }, TestCase.TestMethod));
+		}
 
-			return Execute(messageBus, exceptionAggregator, cancellationTokenSource);
+		private void SendStopMessages(IMessageBus messageBus)
+		{
+			messageBus.QueueMessage(new TestMethodFinished(new[] { TestCase }, TestCase.TestMethod, 0, 1, 1, 0));
+			messageBus.QueueMessage(new TestClassFinished(new[] { TestCase }, TestCase.TestMethod.TestClass, 0, 1, 1, 0));
+			messageBus.QueueMessage(new TestCollectionFinished(new[] { TestCase }, TestCase.TestMethod.TestClass.TestCollection, 0, 1, 1, 0));
+		}
+
+		public void Abort(IMessageBus messageBus, ExceptionAggregator exceptionAggregator, CancellationTokenSource cancellationTokenSource)
+		{
+			var test = new IntegrationTest(TestCase);
+
+			SendStartMessages(messageBus);
+
+			messageBus.QueueMessage(new TestCaseStarting(TestCase));
+			messageBus.QueueMessage(new TestStarting(test));
+
+			messageBus.QueueMessage(new TestSkipped(test, GetAbortMessage()));
+
+			messageBus.QueueMessage(new TestFinished(test, 0, null));
+			messageBus.QueueMessage(new TestCaseFinished(TestCase, 0, 1, 1, 0));
+
+			SendStopMessages(messageBus);
+		}
+
+		private string GetAbortMessage()
+		{
+			var parameters = TestCase.Method.ToRuntimeMethod().GetParameters();
+
+			var missingParameters = _values
+				.Select((o, i) => o.Match(_ => null, () => (int?)i))
+				.Where(i => i != null)
+				.Select(i => (parameter: parameters[i.Value], source: ParameterMethods[i.Value]))
+				.Select(set => $"{set.parameter.Name} <- {set.source.DeclaringType.FullName}.{set.source.Name}({String.Join(",", set.source.GetParameters().Select(p => p.ParameterType.Name))})")
+				.Select(str => $"{Environment.NewLine}\t{str}");
+
+			return $"The sources for the following parameters failed:{String.Join("", missingParameters)}";
 		}
 
 		public static IntegrationTestState Create(IntegrationTestCase testCase)
@@ -142,7 +168,7 @@ namespace Xunit.IntegrationTest.Execution
 					.Bind(method => Result
 						.Create
 						(
-							parameter.ParameterType.IsAssignableFrom(method.ReturnType),
+							IsReturnTypeCompatible(method.ReturnType, parameter.ParameterType),
 							() => method,
 							() => $"Cannot cast return type of source method '{method.DeclaringType.Name}.{method.Name}' from '{method.ReturnType.Name}' to '{parameter.ParameterType.Name}' for parameter '{parameter.Name}' on method '{parameter.Member.DeclaringType.Name}.{parameter.Member.Name}'"
 						)
@@ -154,6 +180,14 @@ namespace Xunit.IntegrationTest.Execution
 					methods => new IntegrationTestState(testCase, methods),
 					error => new IntegrationTestState(testCase, error)
 				);
+		}
+
+		private static bool IsReturnTypeCompatible(Type returnType, Type targetType)
+		{
+			if (returnType.IsConstructedGenericType && returnType.GetGenericTypeDefinition() == typeof(Task<>))
+				returnType = returnType.GetGenericArguments()[0];
+
+			return targetType.IsAssignableFrom(returnType);
 		}
 	}
 }

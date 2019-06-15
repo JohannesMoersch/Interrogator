@@ -32,14 +32,14 @@ namespace Xunit.IntegrationTest
 		{
 			_type = type;
 			_methodName = methodName;
-			_parameterTypes = parameterTypes ?? Array.Empty<Type>();
+			_parameterTypes = parameterTypes;
 		}
 
 		internal Result<MethodInfo, string> TryGetMethod(Type containingType)
 			=> Option
 				.FromNullable((_type ?? containingType)
 					.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance)
-					.FirstOrDefault(method => method.Name == _methodName && method.GetParameters().Select(p => p.ParameterType).SequenceEqual(_parameterTypes))
+					.FirstOrDefault(method => method.Name == _methodName && (_parameterTypes == null || method.GetParameters().Select(p => p.ParameterType).SequenceEqual(_parameterTypes)))
 				)
 				.ToResult(() => $"Could not find source method '{(_type ?? containingType).Name}.{_methodName}({String.Join(", ", _parameterTypes.Select(t => t.Name))})'.");
 	}

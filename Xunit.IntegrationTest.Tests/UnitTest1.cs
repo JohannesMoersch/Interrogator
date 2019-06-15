@@ -6,10 +6,13 @@ namespace Xunit.IntegrationTest.Tests
 {
 	public class UnitTest1
 	{
+		private static int Source()
+			=> 200;
+
 		[IntegrationTest]
-		public static async Task<int> Test1()
+		public static async Task<int> Test1([From(nameof(Source))]int source)
 		{
-			await Task.Delay(200);
+			await Task.Delay(source);
 			return 1;
 		}
 

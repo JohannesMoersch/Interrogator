@@ -37,6 +37,12 @@ namespace Xunit.IntegrationTest.Execution
 					.Select(testCase => (method: testCase.Method.ToRuntimeMethod(), state: IntegrationTestState.Create(testCase)))
 					.ToDictionary(set => set.method, set => set.state);
 
+				List<IntegrationTestState> newTestStates = new List<IntegrationTestState>(testStates.Values);
+
+				foreach (var testState in testStates)
+				{
+				}
+
 				messageBus.QueueMessage(new TestAssemblyStarting(testCases, _testAssembly, DateTime.Now, "Test Environment", "Test Framework Display Name"));
 
 				while (true)
@@ -53,7 +59,7 @@ namespace Xunit.IntegrationTest.Execution
 				}
 
 				foreach (var state in testStates.Values.Where(state => state.Status == IntegrationTestState.TestStatus.NotReady))
-					state.Abort(messageBus, aggregator, cancellationTokenSource).Wait();
+					state.Abort(messageBus, aggregator, cancellationTokenSource);
 
 				messageBus.QueueMessage(new TestAssemblyFinished(testCases, _testAssembly, 1.0m, 1, 0, 0));
 			}
