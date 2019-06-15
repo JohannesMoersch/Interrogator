@@ -10,22 +10,27 @@ namespace Xunit.IntegrationTest.Execution
 {
 	internal class ExecutionJob
 	{
-		private ExecutionJob(MethodInfo method, MethodInfo[] parameterMethods)
+		private ExecutionJob(MethodInfo method, MethodInfo[] parameterMethods, Func<object[], Task> execute, Action<string> abort)
 		{
 			Method = method;
 			Status = parameterMethods.Length == 0 ? ExecutionStatus.Ready : ExecutionStatus.NotReady;
 			ParameterMethods = parameterMethods;
 			ErrorMessage = Option.None<string>();
 
+			_execute = execute;
+			_abort = abort;
 			_values = new Option<object>[ParameterMethods.Count];
 		}
 
-		private ExecutionJob(MethodInfo method, string errorMessage)
+		private ExecutionJob(MethodInfo method, string errorMessage, Func<object[], Task> execute, Action<string> abort)
 		{
 			Method = method;
 			Status = ExecutionStatus.Ready;
 			ParameterMethods = new MethodInfo[0];
 			ErrorMessage = Option.Some(errorMessage ?? throw new ArgumentNullException(nameof(errorMessage)));
+
+			_execute = execute;
+			_abort = abort;
 		}
 
 		public MethodInfo Method { get; }
@@ -36,7 +41,11 @@ namespace Xunit.IntegrationTest.Execution
 
 		public Option<string> ErrorMessage { get; }
 
-		private Option<object>[] _values;
+		private readonly Option<object>[] _values;
+
+		private readonly Func<object[], Task> _execute;
+
+		private readonly Action<string> _abort;
 
 		public void SetParameter(MethodInfo methodInfo, object value)
 		{
@@ -57,10 +66,10 @@ namespace Xunit.IntegrationTest.Execution
 				Status = ExecutionStatus.Ready;
 		}
 
-		public static ExecutionJob Create(MethodInfo testMethod, string errorMessage) 
-			=> new ExecutionJob(testMethod, errorMessage);
+		public static ExecutionJob Create(MethodInfo testMethod, string errorMessage, Func<object[], Task> execute, Action<string> abort) 
+			=> new ExecutionJob(testMethod, errorMessage, execute, abort);
 
-		public static ExecutionJob Create(MethodInfo testMethod)
+		public static ExecutionJob Create(MethodInfo testMethod, Func<object[], Task> execute, Action<string> abort)
 			=> testMethod
 				.GetParameters()
 				.Select(parameter => parameter
@@ -78,8 +87,8 @@ namespace Xunit.IntegrationTest.Execution
 				.TakeUntilFailure()
 				.Match
 				(
-					methods => new ExecutionJob(testMethod, methods),
-					error => new ExecutionJob(testMethod, error)
+					methods => new ExecutionJob(testMethod, methods, execute, abort),
+					error => new ExecutionJob(testMethod, error, execute, abort)
 				);
 
 		private static bool IsReturnTypeCompatible(Type returnType, Type targetType)

@@ -11,7 +11,7 @@ using Xunit.Sdk;
 
 namespace Xunit.IntegrationTest.Execution
 {
-	internal class IntegrationTestState : IJob
+	internal class IntegrationTestState
 	{
 		private IntegrationTestState(IntegrationTestCase testCase, MethodInfo[] parameterMethods)
 		{
