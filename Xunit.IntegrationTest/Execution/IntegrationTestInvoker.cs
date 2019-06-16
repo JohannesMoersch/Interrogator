@@ -13,9 +13,9 @@ namespace Xunit.IntegrationTest.Execution
 {
 	internal class IntegrationTestInvoker : XunitTestInvoker
 	{
-		private readonly Action<Result<Option<object>, Exception>> _resultCallback;
+		private readonly Action<Result<Option<object>, Unit>> _resultCallback;
 
-		public IntegrationTestInvoker(ITest test, IMessageBus messageBus, Type testClass, object[] constructorArguments, MethodInfo testMethod, object[] testMethodArguments, IReadOnlyList<BeforeAfterTestAttribute> beforeAfterAttributes, ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource, Action<Result<Option<object>, Exception>> resultCallback)
+		public IntegrationTestInvoker(ITest test, IMessageBus messageBus, Type testClass, object[] constructorArguments, MethodInfo testMethod, object[] testMethodArguments, IReadOnlyList<BeforeAfterTestAttribute> beforeAfterAttributes, ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource, Action<Result<Option<object>, Unit>> resultCallback)
 			: base(test, messageBus, testClass, constructorArguments, testMethod, testMethodArguments, beforeAfterAttributes, aggregator, cancellationTokenSource)
 		{
 			_resultCallback = resultCallback;
@@ -34,25 +34,25 @@ namespace Xunit.IntegrationTest.Execution
 					return task.ContinueWith(t =>
 					{
 						if (t.IsFaulted)
-							_resultCallback.Invoke(Result.Failure<Option<object>, Exception>(t.Exception));
+							_resultCallback.Invoke(Result.Failure<Option<object>, Unit>(Unit.Value));
 						else if (t.IsCanceled)
-							_resultCallback.Invoke(Result.Failure<Option<object>, Exception>(new TaskCanceledException()));
+							_resultCallback.Invoke(Result.Failure<Option<object>, Unit>(Unit.Value));
 						else if (IsGenericTaskType(t.GetType()))
-							_resultCallback.Invoke(Result.Success<Option<object>, Exception>(Option.FromNullable((object)((dynamic)t).Result)));
+							_resultCallback.Invoke(Result.Success<Option<object>, Unit>(Option.FromNullable((object)((dynamic)t).Result)));
 						else
-							_resultCallback.Invoke(Result.Success<Option<object>, Exception>(Option.None<object>()));
+							_resultCallback.Invoke(Result.Success<Option<object>, Unit>(Option.None<object>()));
 
 						return t;
 					});
 				}
 
-				_resultCallback.Invoke(Result.Success<Option<object>, Exception>(Option.FromNullable(result)));
+				_resultCallback.Invoke(Result.Success<Option<object>, Unit>(Option.FromNullable(result)));
 
 				return result;
 			}
 			catch (Exception ex)
 			{
-				_resultCallback.Invoke(Result.Failure<Option<object>, Exception>(ex));
+				_resultCallback.Invoke(Result.Failure<Option<object>, Unit>(Unit.Value));
 
 				ExceptionDispatchInfo.Capture(ex).Throw();
 

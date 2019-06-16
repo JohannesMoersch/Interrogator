@@ -16,7 +16,7 @@ namespace Xunit.IntegrationTest.Tests
 			return 1;
 		}
 
-		[Fact]
+		[IntegrationTest]
 		public static void Test2()
 		{
 		}

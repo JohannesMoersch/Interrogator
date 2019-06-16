@@ -14,9 +14,9 @@ namespace Xunit.IntegrationTest.Execution
 {
 	internal class IntegrationTestCaseRunner : XunitTestCaseRunner
 	{
-		private readonly Action<Result<Option<object>, Exception>> _resultCallback;
+		private readonly Action<Result<Option<object>, Unit>> _resultCallback;
 
-		public IntegrationTestCaseRunner(IXunitTestCase testCase, object[] constructorArguments, object[] testMethodArguments, IMessageBus messageBus, ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource, Action<Result<Option<object>, Exception>> resultCallback)
+		public IntegrationTestCaseRunner(IXunitTestCase testCase, object[] constructorArguments, object[] testMethodArguments, IMessageBus messageBus, ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource, Action<Result<Option<object>, Unit>> resultCallback)
 			: base(testCase, testCase.DisplayName, testCase.SkipReason, constructorArguments, testMethodArguments, messageBus, aggregator, cancellationTokenSource)
 		{
 			_resultCallback = resultCallback;

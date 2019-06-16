@@ -34,10 +34,10 @@ namespace Xunit.IntegrationTest.Execution
 				var cancellationTokenSource = new CancellationTokenSource();
 
 				var testStates = testCases
-					.Select(testCase => (method: testCase.Method.ToRuntimeMethod(), state: IntegrationTestState.Create(testCase)))
+					.Select(testCase => (method: testCase.Method.ToRuntimeMethod(), state: IntegrationTestExecutionJob.Create(testCase, messageBus)))
 					.ToDictionary(set => set.method, set => set.state);
 
-				var newTestStates = new List<IntegrationTestState>(testStates.Values);
+				var newTestStates = new List<ExecutionJob>(testStates.Values);
 
 				foreach (var testState in testStates)
 				{
@@ -52,14 +52,14 @@ namespace Xunit.IntegrationTest.Execution
 					if (set.Value == null)
 						break;
 
-					var result = set.Value.Execute(messageBus, aggregator, cancellationTokenSource).Result;
+					var result = set.Value.Execute(cancellationTokenSource).Result;
 
 					foreach (var state in testStates.Values)
 						state.SetParameter(set.Key, result);
 				}
 
 				foreach (var state in testStates.Values.Where(state => state.Status == ExecutionStatus.NotReady))
-					state.Abort(messageBus, aggregator, cancellationTokenSource);
+					state.Abort();
 
 				messageBus.QueueMessage(new TestAssemblyFinished(testCases, _testAssembly, 1.0m, 1, 0, 0));
 			}
