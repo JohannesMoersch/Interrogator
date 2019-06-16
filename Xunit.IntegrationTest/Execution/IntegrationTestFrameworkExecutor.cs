@@ -39,8 +39,21 @@ namespace Xunit.IntegrationTest.Execution
 
 				var newTestStates = new List<ExecutionJob>(testStates.Values);
 
-				foreach (var testState in testStates)
+				while (newTestStates.Any())
 				{
+					var methods = newTestStates.SelectMany(testState => testState.ParameterMethods).ToArray();
+
+					newTestStates.Clear();
+
+					foreach (var method in methods)
+					{
+						if (testStates.ContainsKey(method))
+						{
+							var executionJob = ExecutionJob.Create(method, (arguments, cts) => default, _ => { });
+							newTestStates.Add(executionJob);
+							testStates.Add(method, executionJob);
+						}
+					}
 				}
 
 				messageBus.QueueMessage(new TestAssemblyStarting(testCases, _testAssembly, DateTime.Now, "Test Environment", "Test Framework Display Name"));
