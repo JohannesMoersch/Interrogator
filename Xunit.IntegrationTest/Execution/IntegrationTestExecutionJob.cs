@@ -33,7 +33,7 @@ namespace Xunit.IntegrationTest.Execution
 			messageBus.QueueMessage(new TestCollectionFinished(new[] { testCase }, testCase.TestMethod.TestClass.TestCollection, 0, 1, 1, 0));
 		}
 
-		private static async Task<Result<Option<object>, Unit>> ExecuteTest(IntegrationTestCase testCase, IMessageBus messageBus, object[] arguments, CancellationTokenSource cancellationTokenSource)
+		private static async Task<Result<Option<object>, Exception>> ExecuteTest(IntegrationTestCase testCase, IMessageBus messageBus, object[] arguments, CancellationTokenSource cancellationTokenSource)
 		{
 			SendStartMessages(testCase, messageBus);
 
@@ -44,7 +44,7 @@ namespace Xunit.IntegrationTest.Execution
 			return result;
 		}
 
-		private static Task<Result<Option<object>, Unit>> FailTest(IntegrationTestCase testCase, IMessageBus messageBus, string errorMessage)
+		private static Task<Result<Option<object>, Exception>> FailTest(IntegrationTestCase testCase, IMessageBus messageBus, string errorMessage)
 		{
 			var test = new IntegrationTest(testCase);
 
@@ -60,7 +60,7 @@ namespace Xunit.IntegrationTest.Execution
 
 			SendStopMessages(testCase, messageBus);
 
-			return Task.FromResult(Result.Failure<Option<object>, Unit>(Unit.Value));
+			return Task.FromResult(Result.Failure<Option<object>, Exception>(new InvalidOperationException(errorMessage)));
 		}
 
 		private static void AbortTest(IntegrationTestCase testCase, IMessageBus messageBus, string abortMessage)

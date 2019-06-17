@@ -12,9 +12,9 @@ namespace Xunit.IntegrationTest.Execution
 {
 	internal static class IntegrationTestCaseExtensions
 	{
-		public static async Task<Result<Option<object>, Unit>> Execute(this IntegrationTestCase testCase, object[] constructorArguments, object[] testMethodArguments, IMessageBus messageBus, ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource)
+		public static async Task<Result<Option<object>, Exception>> Execute(this IntegrationTestCase testCase, object[] constructorArguments, object[] testMethodArguments, IMessageBus messageBus, ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource)
 		{
-			var result = default(Result<Option<object>, Unit>);
+			var result = default(Result<Option<object>, Exception>);
 
 			await new IntegrationTestCaseRunner(testCase, constructorArguments, testMethodArguments, messageBus, aggregator, cancellationTokenSource, value => result = value).RunAsync();
 

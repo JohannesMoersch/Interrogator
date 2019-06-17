@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
+using Xunit.IntegrationTest.Common;
 using Xunit.IntegrationTest.Discovery;
 using Xunit.IntegrationTest.Infrastructure;
 using Xunit.Sdk;
@@ -47,9 +48,9 @@ namespace Xunit.IntegrationTest.Execution
 
 					foreach (var method in methods)
 					{
-						if (testStates.ContainsKey(method))
+						if (!testStates.ContainsKey(method))
 						{
-							var executionJob = ExecutionJob.Create(method, (arguments, cts) => default, _ => { });
+							var executionJob = MethodExecutionJob.Create(method);
 							newTestStates.Add(executionJob);
 							testStates.Add(method, executionJob);
 						}
@@ -67,8 +68,18 @@ namespace Xunit.IntegrationTest.Execution
 
 					var result = set.Value.Execute(cancellationTokenSource).Result;
 
-					foreach (var state in testStates.Values)
-						state.SetParameter(set.Key, result);
+					result
+						.Match
+						(
+							success =>
+							{
+								foreach (var state in testStates.Values)
+									state.SetParameter(set.Key, success);
+
+								return Unit.Value;
+							},
+							failure => Unit.Value
+						);
 				}
 
 				foreach (var state in testStates.Values.Where(state => state.Status == ExecutionStatus.NotReady))
