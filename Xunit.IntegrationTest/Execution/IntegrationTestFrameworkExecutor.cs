@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
+using Xunit.IntegrationTest.Common;
 using Xunit.IntegrationTest.Discovery;
 using Xunit.IntegrationTest.Infrastructure;
 using Xunit.Sdk;
@@ -34,26 +35,55 @@ namespace Xunit.IntegrationTest.Execution
 				var cancellationTokenSource = new CancellationTokenSource();
 
 				var testStates = testCases
-					.Select(testCase => (method: testCase.Method.ToRuntimeMethod(), state: IntegrationTestState.Create(testCase)))
+					.Select(testCase => (method: testCase.Method.ToRuntimeMethod(), state: IntegrationTestExecutionJob.Create(testCase, messageBus)))
 					.ToDictionary(set => set.method, set => set.state);
+
+				var newTestStates = new List<ExecutionJob>(testStates.Values);
+
+				while (newTestStates.Any())
+				{
+					var methods = newTestStates.SelectMany(testState => testState.ParameterMethods).ToArray();
+
+					newTestStates.Clear();
+
+					foreach (var method in methods)
+					{
+						if (!testStates.ContainsKey(method))
+						{
+							var executionJob = MethodExecutionJob.Create(method);
+							newTestStates.Add(executionJob);
+							testStates.Add(method, executionJob);
+						}
+					}
+				}
 
 				messageBus.QueueMessage(new TestAssemblyStarting(testCases, _testAssembly, DateTime.Now, "Test Environment", "Test Framework Display Name"));
 
 				while (true)
 				{
-					var set = testStates.FirstOrDefault(s => s.Value.Status == IntegrationTestState.TestStatus.Ready);
+					var set = testStates.FirstOrDefault(s => s.Value.Status == ExecutionStatus.Ready);
 
 					if (set.Value == null)
 						break;
 
-					var result = set.Value.Execute(messageBus, aggregator, cancellationTokenSource).Result;
+					var result = set.Value.Execute(cancellationTokenSource).Result;
 
-					foreach (var state in testStates.Values)
-						state.SetParameter(set.Key, result);
+					result
+						.Match
+						(
+							success =>
+							{
+								foreach (var state in testStates.Values)
+									state.SetParameter(set.Key, success);
+
+								return Unit.Value;
+							},
+							failure => Unit.Value
+						);
 				}
 
-				foreach (var state in testStates.Values.Where(state => state.Status == IntegrationTestState.TestStatus.NotReady))
-					state.Abort(messageBus, aggregator, cancellationTokenSource).Wait();
+				foreach (var state in testStates.Values.Where(state => state.Status == ExecutionStatus.NotReady))
+					state.Abort();
 
 				messageBus.QueueMessage(new TestAssemblyFinished(testCases, _testAssembly, 1.0m, 1, 0, 0));
 			}
