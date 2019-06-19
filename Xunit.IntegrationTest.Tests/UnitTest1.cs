@@ -7,7 +7,7 @@ namespace Xunit.IntegrationTest.Tests
 	public class UnitTest1
 	{
 		private static int Source()
-			=> 200;
+			=> throw new Exception("Test Exception");
 
 		[IntegrationTest]
 		public static async Task<int> Test1([From(nameof(Source))]int source)

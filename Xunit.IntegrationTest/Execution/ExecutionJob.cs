@@ -49,6 +49,8 @@ namespace Xunit.IntegrationTest.Execution
 
 		private readonly Action<string> _abort;
 
+		private Option<Exception> _exception;
+
 		public void SetParameter(MethodInfo methodInfo, Option<object> value)
 		{
 			if (Status != ExecutionStatus.NotReady)
@@ -88,15 +90,17 @@ namespace Xunit.IntegrationTest.Execution
 					{
 						Status = ExecutionStatus.NotComplete;
 
+						_exception = Option.Some(ex);
+
 						return Result.Failure<Option<object>, Unit>(Unit.Value);
 					}
 				);
 		}
 
-		public void Abort() 
-			=> _abort.Invoke(GetAbortMessage());
+		public void Abort(Dictionary<MethodInfo, ExecutionJob> jobs) 
+			=> _abort.Invoke(GetAbortMessage(jobs));
 
-		private string GetAbortMessage()
+		private string GetAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs)
 		{
 			var parameters = Method.GetParameters();
 
@@ -104,7 +108,7 @@ namespace Xunit.IntegrationTest.Execution
 				.Select((o, i) => o.Match(_ => null, () => (int?)i))
 				.Where(i => i != null)
 				.Select(i => (parameter: parameters[i.Value], source: ParameterMethods[i.Value]))
-				.Select(set => $"{set.parameter.Name} <- {set.source.DeclaringType.FullName}.{set.source.Name}({String.Join(",", set.source.GetParameters().Select(p => p.ParameterType.Name))})")
+				.Select(set => $"{set.parameter.Name} <- {set.source.DeclaringType.FullName}.{set.source.Name}({String.Join(",", set.source.GetParameters().Select(p => p.ParameterType.Name))}) - {jobs[set.source]._exception.ToString()}")
 				.Select(str => $"{Environment.NewLine}\t{str}");
 
 			return $"The sources for the following parameters failed:{String.Join("", missingParameters)}";

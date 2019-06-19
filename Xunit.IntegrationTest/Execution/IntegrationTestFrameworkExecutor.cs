@@ -34,11 +34,11 @@ namespace Xunit.IntegrationTest.Execution
 
 				var cancellationTokenSource = new CancellationTokenSource();
 
-				var testStates = testCases
+				var jobs = testCases
 					.Select(testCase => (method: testCase.Method.ToRuntimeMethod(), state: IntegrationTestExecutionJob.Create(testCase, messageBus)))
 					.ToDictionary(set => set.method, set => set.state);
 
-				var newTestStates = new List<ExecutionJob>(testStates.Values);
+				var newTestStates = new List<ExecutionJob>(jobs.Values);
 
 				while (newTestStates.Any())
 				{
@@ -48,11 +48,11 @@ namespace Xunit.IntegrationTest.Execution
 
 					foreach (var method in methods)
 					{
-						if (!testStates.ContainsKey(method))
+						if (!jobs.ContainsKey(method))
 						{
 							var executionJob = MethodExecutionJob.Create(method);
 							newTestStates.Add(executionJob);
-							testStates.Add(method, executionJob);
+							jobs.Add(method, executionJob);
 						}
 					}
 				}
@@ -61,7 +61,7 @@ namespace Xunit.IntegrationTest.Execution
 
 				while (true)
 				{
-					var set = testStates.FirstOrDefault(s => s.Value.Status == ExecutionStatus.Ready);
+					var set = jobs.FirstOrDefault(s => s.Value.Status == ExecutionStatus.Ready);
 
 					if (set.Value == null)
 						break;
@@ -73,7 +73,7 @@ namespace Xunit.IntegrationTest.Execution
 						(
 							success =>
 							{
-								foreach (var state in testStates.Values)
+								foreach (var state in jobs.Values)
 									state.SetParameter(set.Key, success);
 
 								return Unit.Value;
@@ -82,8 +82,8 @@ namespace Xunit.IntegrationTest.Execution
 						);
 				}
 
-				foreach (var state in testStates.Values.Where(state => state.Status == ExecutionStatus.NotReady))
-					state.Abort();
+				foreach (var state in jobs.Values.Where(state => state.Status == ExecutionStatus.NotReady))
+					state.Abort(jobs);
 
 				messageBus.QueueMessage(new TestAssemblyFinished(testCases, _testAssembly, 1.0m, 1, 0, 0));
 			}
