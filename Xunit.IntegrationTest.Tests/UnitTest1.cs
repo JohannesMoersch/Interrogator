@@ -17,12 +17,11 @@ namespace Xunit.IntegrationTest.Tests
 		}
 
 		[IntegrationTest]
-		public static void Test2()
-		{
-		}
+		public static float Test2()
+			=> throw new Exception("!!!");
 
 		[IntegrationTest]
-		public static void Test3([From(nameof(Test1))]int stuff)
+		public static void Test3([From(nameof(Test1))]int stuff, [From(nameof(Test2))]float things)
 		{
 		}
 	}

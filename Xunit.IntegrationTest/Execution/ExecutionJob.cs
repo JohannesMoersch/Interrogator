@@ -12,6 +12,8 @@ namespace Xunit.IntegrationTest.Execution
 {
 	internal class ExecutionJob
 	{
+		private const string _exceptionBoundries = "********************************************************************************";
+
 		private ExecutionJob(MethodInfo method, MethodInfo[] parameterMethods, Func<object[], CancellationTokenSource, Task<Result<Option<object>, Exception>>> execute, Action<string> abort)
 		{
 			Method = method;
@@ -98,20 +100,28 @@ namespace Xunit.IntegrationTest.Execution
 		}
 
 		public void Abort(Dictionary<MethodInfo, ExecutionJob> jobs) 
-			=> _abort.Invoke(GetAbortMessage(jobs));
+			=> _abort.Invoke($"The sources for the following parameters failed:{String.Join("", GetAbortMessage(jobs).Select(str => $"{Environment.NewLine}{str}"))}");
 
-		private string GetAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs)
+		private IEnumerable<string> GetAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs)
 		{
 			var parameters = Method.GetParameters();
 
-			var missingParameters = _values
+			return _values
 				.Select((o, i) => o.Match(_ => null, () => (int?)i))
 				.Where(i => i != null)
 				.Select(i => (parameter: parameters[i.Value], source: ParameterMethods[i.Value]))
-				.Select(set => $"{set.parameter.Name} <- {set.source.DeclaringType.FullName}.{set.source.Name}({String.Join(",", set.source.GetParameters().Select(p => p.ParameterType.Name))}) - {jobs[set.source]._exception.ToString()}")
-				.Select(str => $"{Environment.NewLine}\t{str}");
+				.SelectMany(set => GetMissingParameterMessages(jobs, set.parameter, set.source))
+				.Select(str => str.FirstOrDefault() != '*' ? $"\t{str}" : str)
+				.Concat(_exception.Match(ex => new[] { $"{_exceptionBoundries}{Environment.NewLine}{ex.ToString()}{Environment.NewLine}{_exceptionBoundries}" }, () => Array.Empty<string>()));
+		}
 
-			return $"The sources for the following parameters failed:{String.Join("", missingParameters)}";
+		private IEnumerable<string> GetMissingParameterMessages(Dictionary<MethodInfo, ExecutionJob> jobs, ParameterInfo parameter, MethodInfo source)
+		{
+			return new[] 
+			{
+				$"{parameter.Name} <- {source.DeclaringType.FullName}.{source.Name}({String.Join(",", source.GetParameters().Select(p => p.ParameterType.Name))})"
+			}
+			.Concat(jobs[source].GetAbortMessage(jobs));
 		}
 
 		public static ExecutionJob Create(MethodInfo testMethod, string errorMessage, Func<object[], CancellationTokenSource, Task<Result<Option<object>, Exception>>> execute, Action<string> abort) 
