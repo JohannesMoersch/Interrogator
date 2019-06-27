@@ -1,2 +1,2 @@
-# xunit.integrationtest
-Extends Xunit to add better support for integration testing.
+# Interrogator
+Interrogator is a collection of packages to support integration testing.
