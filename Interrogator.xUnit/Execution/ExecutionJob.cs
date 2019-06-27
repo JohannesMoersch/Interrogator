@@ -15,7 +15,7 @@ namespace Interrogator.xUnit.Execution
 	{
 		private const string _exceptionBoundries = "********************************************************************************";
 
-		private ExecutionJob(MethodInfo method, MethodInfo[] parameterMethods, Option<ConstructorInfo> constructor, MethodInfo[] constructorParameterMethods, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, Exception>>> execute, Action<string> abort)
+		private ExecutionJob(MethodInfo method, MethodInfo[] parameterMethods, Option<ConstructorInfo> constructor, MethodInfo[] constructorParameterMethods, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, TestFailure>>> execute, Action<string> abort)
 		{
 			Method = method;
 			Status = parameterMethods.Length == 0 && constructorParameterMethods.Length == 0 ? ExecutionStatus.Ready : ExecutionStatus.NotReady;
@@ -30,7 +30,7 @@ namespace Interrogator.xUnit.Execution
 			_constructorArguments = new Option<Option<object>>[ConstructorParameterMethods.Count];
 		}
 
-		private ExecutionJob(MethodInfo method, string errorMessage, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, Exception>>> execute, Action<string> abort)
+		private ExecutionJob(MethodInfo method, string errorMessage, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, TestFailure>>> execute, Action<string> abort)
 		{
 			Method = method;
 			Status = ExecutionStatus.Ready;
@@ -57,11 +57,11 @@ namespace Interrogator.xUnit.Execution
 
 		private readonly Option<Option<object>>[] _constructorArguments;
 
-		private readonly Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, Exception>>> _execute;
+		private readonly Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, TestFailure>>> _execute;
 
 		private readonly Action<string> _abort;
 
-		private Option<Exception> _exception;
+		private Option<TestFailure> _failure;
 
 		public void SetParameter(MethodInfo methodInfo, Option<object> value)
 		{
@@ -115,11 +115,11 @@ namespace Interrogator.xUnit.Execution
 
 						return Result.Success<Option<object>, Unit>(value);
 					}, 
-					ex =>
+					failure =>
 					{
 						Status = ExecutionStatus.NotComplete;
 
-						_exception = Option.Some(ex);
+						_failure = Option.Some(failure);
 
 						return Result.Failure<Option<object>, Unit>(Unit.Value);
 					}
@@ -141,7 +141,7 @@ namespace Interrogator.xUnit.Execution
 					  Enumerable.Empty<string>
 				  )
 				  .Concat(GetParametersAbortMessage(jobs, Method.GetParameters(), _methodArguments, ParameterMethods, "Method Parameter", methodStack))
-				  .Concat(_exception.Match(ex => new[] { $"{_exceptionBoundries}{Environment.NewLine}{GetExceptionMessage(ex)}{Environment.NewLine}{_exceptionBoundries}" }, () => Array.Empty<string>()));
+				  .Concat(_failure.Match(failure => GetFailureMessage(failure), () => Enumerable.Empty<string>()));
 		}
 
 		private static IEnumerable<string> GetParametersAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs, ParameterInfo[] parameters, Option<Option<object>>[] parameterArguments, IReadOnlyList<MethodInfo> parameterMethods, string prefix, HashSet<MethodInfo> methodStack)
@@ -161,6 +161,14 @@ namespace Interrogator.xUnit.Execution
 			.Concat(jobs[source].GetAbortMessage(jobs, methodStack));
 		}
 
+		private static IEnumerable<string> GetFailureMessage(TestFailure testFailure)
+			=> testFailure
+				.Match
+				(
+					ex => new[] { $"{_exceptionBoundries}{Environment.NewLine}{GetExceptionMessage(ex)}{Environment.NewLine}{_exceptionBoundries}" },
+					skip => new[] { $"\tTest was skipped: {skip}" }
+				);
+
 		private static string GetExceptionMessage(Exception exception)
 		{
 			if (exception is TargetInvocationException invocationException)
@@ -172,10 +180,10 @@ namespace Interrogator.xUnit.Execution
 			return exception.ToString();
 		}
 
-		public static ExecutionJob Create(MethodInfo testMethod, string errorMessage, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, Exception>>> execute, Action<string> abort) 
+		public static ExecutionJob Create(MethodInfo testMethod, string errorMessage, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, TestFailure>>> execute, Action<string> abort) 
 			=> new ExecutionJob(testMethod, errorMessage, execute, abort);
 
-		public static ExecutionJob Create(MethodInfo testMethod, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, Exception>>> execute, Action<string> abort)
+		public static ExecutionJob Create(MethodInfo testMethod, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, TestFailure>>> execute, Action<string> abort)
 			=> GetParameters(testMethod.DeclaringType, testMethod.GetParameters())
 				.Match
 				(

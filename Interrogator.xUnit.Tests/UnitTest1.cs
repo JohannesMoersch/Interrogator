@@ -14,6 +14,14 @@ namespace Interrogator.xUnit.Tests
 		}
 	}
 
+	public class SkipTestAttribute : IntegrationTestAttribute
+	{
+		public SkipTestAttribute()
+		{
+			Skip = "Skip This Test";
+		}
+	}
+
 	public class UnitTest1
 	{
 		private readonly string _message;
@@ -22,13 +30,18 @@ namespace Interrogator.xUnit.Tests
 			=> _message = message;
 
 		private int Source()
-			=> throw new Exception(_message);
+			=> 10;
 
-		[IntegrationTest]
+		[SkipTest]
 		public async Task<int> Test1([From(nameof(Source))]int source)
 		{
 			await Task.Delay(source);
 			return 1;
+		}
+
+		[IntegrationTest]
+		public void Blah([From(nameof(Test1))]int blah)
+		{
 		}
 
 		[IntegrationTest]

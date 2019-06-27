@@ -13,13 +13,23 @@ namespace Interrogator.xUnit.Execution
 {
 	internal static class IntegrationTestCaseExtensions
 	{
-		public static async Task<Result<Option<object>, Exception>> Execute(this IntegrationTestCase testCase, object[] constructorArguments, object[] testMethodArguments, IMessageBus messageBus, ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource)
+		public static async Task<Result<Option<object>, TestFailure>> Execute(this IntegrationTestCase testCase, object[] constructorArguments, object[] testMethodArguments, IMessageBus messageBus, ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource)
 		{
-			var result = default(Result<Option<object>, Exception>?);
+			var result = default(Result<Option<object>, TestFailure>?);
 
-			var interceptor = new MessageBusWrapper(messageBus, message => { if (message is TestFailed test && !result.HasValue) result = Result.Failure<Option<object>, Exception>(new Exception(String.Join(Environment.NewLine, test.Messages))); });
+			var interceptor = new MessageBusWrapper(messageBus, message => 
+				{
+					if (result.HasValue)
+						return;
 
-			await new IntegrationTestCaseRunner(testCase, constructorArguments, testMethodArguments, interceptor, aggregator, cancellationTokenSource, value => result = value).RunAsync();
+					if (message is TestFailed failedTest)
+						result = Result.Failure<Option<object>, TestFailure>(new TestFailure(new Exception(String.Join(Environment.NewLine, failedTest.Messages))));
+
+					if (message is TestSkipped skippedTest)
+						result = Result.Failure<Option<object>, TestFailure>(new TestFailure(skippedTest.Reason));
+				});
+
+			await new IntegrationTestCaseRunner(testCase, constructorArguments, testMethodArguments, interceptor, aggregator, cancellationTokenSource, value => result = value.MapFailure(ex => new TestFailure(ex))).RunAsync();
 
 			return result.Value;
 		}

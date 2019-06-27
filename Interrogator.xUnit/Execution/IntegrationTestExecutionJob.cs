@@ -33,7 +33,7 @@ namespace Interrogator.xUnit.Execution
 			messageBus.QueueMessage(new TestCollectionFinished(new[] { testCase }, testCase.TestMethod.TestClass.TestCollection, 0, 1, 1, 0));
 		}
 
-		private static async Task<Result<Option<object>, Exception>> ExecuteTest(IntegrationTestCase testCase, IMessageBus messageBus, object[] methodArguments, object[] constructorArguments, CancellationTokenSource cancellationTokenSource)
+		private static async Task<Result<Option<object>, TestFailure>> ExecuteTest(IntegrationTestCase testCase, IMessageBus messageBus, object[] methodArguments, object[] constructorArguments, CancellationTokenSource cancellationTokenSource)
 		{
 			SendStartMessages(testCase, messageBus);
 
@@ -44,7 +44,7 @@ namespace Interrogator.xUnit.Execution
 			return result;
 		}
 
-		private static Task<Result<Option<object>, Exception>> FailTest(IntegrationTestCase testCase, IMessageBus messageBus, string errorMessage)
+		private static Task<Result<Option<object>, TestFailure>> FailTest(IntegrationTestCase testCase, IMessageBus messageBus, string errorMessage)
 		{
 			var test = new IntegrationTest(testCase);
 
@@ -60,7 +60,7 @@ namespace Interrogator.xUnit.Execution
 
 			SendStopMessages(testCase, messageBus);
 
-			return Task.FromResult(Result.Failure<Option<object>, Exception>(new InvalidOperationException(errorMessage)));
+			return Task.FromResult(Result.Failure<Option<object>, TestFailure>(new TestFailure(new InvalidOperationException(errorMessage))));
 		}
 
 		private static void AbortTest(IntegrationTestCase testCase, IMessageBus messageBus, string abortMessage)

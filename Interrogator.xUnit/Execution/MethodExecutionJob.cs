@@ -24,8 +24,11 @@ namespace Interrogator.xUnit.Execution
 					 _ => { }
 				);
 
-		private static async Task<Result<Option<object>, Exception>> ExecuteTest(MethodInfo method, object[] methodArguments, object[] constructorArguments, CancellationTokenSource cancellationTokenSource)
+		private static async Task<Result<Option<object>, TestFailure>> ExecuteTest(MethodInfo method, object[] methodArguments, object[] constructorArguments, CancellationTokenSource cancellationTokenSource)
 		{
+			if (method.TryGetSkipReason(out var skipReason))
+				return Result.Failure<Option<object>, TestFailure>(new TestFailure(skipReason));
+
 			var methodInfo = new ReflectionMethodInfo(method);
 			var typeInfo = new ReflectionTypeInfo(method.DeclaringType);
 			var assemblyInfo = new ReflectionAssemblyInfo(method.DeclaringType.Assembly);
@@ -40,7 +43,7 @@ namespace Interrogator.xUnit.Execution
 			}
 			catch (Exception ex)
 			{
-				return Result.Failure<Option<object>, Exception>(ex);
+				return Result.Failure<Option<object>, TestFailure>(new TestFailure(ex));
 			}
 		}
 	}
