@@ -18,7 +18,7 @@ namespace Interrogator.xUnit.Tests
 	{
 		private readonly string _message;
 
-		public UnitTest1([From(typeof(Stuff), nameof(Stuff.Message))]string message) 
+		public UnitTest1([From(typeof(Stuff), nameof(Stuff.Message))]string message)
 			=> _message = message;
 
 		private int Source()
@@ -32,12 +32,13 @@ namespace Interrogator.xUnit.Tests
 		}
 
 		[IntegrationTest]
-		public static float Test2()
+		public static float Test2([From(nameof(Test3))] int test)
 			=> throw new Exception("!!!");
 
 		[IntegrationTest]
-		public static void Test3([From(nameof(Test1))]int stuff, [From(nameof(Test2))]float things)
+		public static int Test3([From(nameof(Test1))]int stuff, [From(nameof(Test2))]float things)
 		{
+			return 0;
 		}
 	}
 }

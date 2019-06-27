@@ -127,33 +127,38 @@ namespace Interrogator.xUnit.Execution
 		}
 
 		public void Abort(Dictionary<MethodInfo, ExecutionJob> jobs) 
-			=> _abort.Invoke($"The following dependencies failed:{String.Join("", GetAbortMessage(jobs).Select(str => $"{Environment.NewLine}{str}"))}");
+			=> _abort.Invoke($"The following dependencies failed:{String.Join("", GetAbortMessage(jobs, new HashSet<MethodInfo>()).Select(str => $"{Environment.NewLine}{str}"))}");
 
-		private IEnumerable<string> GetAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs)
-			=> Constructor
-				.Match
-				(
-					constructor => GetParametersAbortMessage(jobs, constructor.GetParameters(), _constructorArguments, ConstructorParameterMethods, "Constructor Parameter"),
-					Enumerable.Empty<string>
-				)
-				.Concat(GetParametersAbortMessage(jobs, Method.GetParameters(), _methodArguments, ParameterMethods, "Method Parameter"))
-				.Concat(_exception.Match(ex => new[] { $"{_exceptionBoundries}{Environment.NewLine}{GetExceptionMessage(ex)}{Environment.NewLine}{_exceptionBoundries}" }, () => Array.Empty<string>()));
+		private IEnumerable<string> GetAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs, HashSet<MethodInfo> methodStack)
+		{
+			if (!methodStack.Add(Method))
+				return new[] { "\tCycle Detected" };
 
-		private static IEnumerable<string> GetParametersAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs, ParameterInfo[] parameters, Option<Option<object>>[] parameterArguments, IReadOnlyList<MethodInfo> parameterMethods, string prefix)
+			return Constructor
+				  .Match
+				  (
+					  constructor => GetParametersAbortMessage(jobs, constructor.GetParameters(), _constructorArguments, ConstructorParameterMethods, "Constructor Parameter", methodStack),
+					  Enumerable.Empty<string>
+				  )
+				  .Concat(GetParametersAbortMessage(jobs, Method.GetParameters(), _methodArguments, ParameterMethods, "Method Parameter", methodStack))
+				  .Concat(_exception.Match(ex => new[] { $"{_exceptionBoundries}{Environment.NewLine}{GetExceptionMessage(ex)}{Environment.NewLine}{_exceptionBoundries}" }, () => Array.Empty<string>()));
+		}
+
+		private static IEnumerable<string> GetParametersAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs, ParameterInfo[] parameters, Option<Option<object>>[] parameterArguments, IReadOnlyList<MethodInfo> parameterMethods, string prefix, HashSet<MethodInfo> methodStack)
 			=> parameterArguments
 				.Select((o, i) => o.Match(_ => null, () => (int?)i))
 				.Where(i => i != null)
 				.Select(i => (parameter: parameters[i.Value], source: parameterMethods[i.Value]))
-				.SelectMany(set => GetMissingParameterMessages(jobs, set.parameter, set.source, prefix))
+				.SelectMany(set => GetMissingParameterMessages(jobs, set.parameter, set.source, prefix, methodStack))
 				.Select(str => str.FirstOrDefault() != '*' ? $"\t{str}" : str);
 
-		private static IEnumerable<string> GetMissingParameterMessages(Dictionary<MethodInfo, ExecutionJob> jobs, ParameterInfo parameter, MethodInfo source, string prefix)
+		private static IEnumerable<string> GetMissingParameterMessages(Dictionary<MethodInfo, ExecutionJob> jobs, ParameterInfo parameter, MethodInfo source, string prefix, HashSet<MethodInfo> methodStack)
 		{
 			return new[] 
 			{
 				$"{prefix}: {parameter.Name} <- {source.DeclaringType.FullName}.{source.Name}({String.Join(",", source.GetParameters().Select(p => p.ParameterType.Name))})"
 			}
-			.Concat(jobs[source].GetAbortMessage(jobs));
+			.Concat(jobs[source].GetAbortMessage(jobs, methodStack));
 		}
 
 		private static string GetExceptionMessage(Exception exception)
