@@ -1,0 +1,1 @@
+﻿[assembly: Interrogator.xUnit.UseIntegrationTestFramework]
