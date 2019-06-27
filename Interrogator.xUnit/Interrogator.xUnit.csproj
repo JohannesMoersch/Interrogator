@@ -3,6 +3,16 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>7.3</LangVersion>
+    <Version>0.1.0</Version>
+    <Description>Extends Xunit to add better support for integration testing.</Description>
+    <PackageTags>xunit integration test</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Copyright>Copyright © 2019 Johannes Moersch</Copyright>
+    <PackageProjectUrl>https://github.com/JohannesMoersch/Interrogator</PackageProjectUrl>
+    <Authors>Johannes Moersch</Authors>
+    <Company>Johannes Moersch</Company>
+    <Product>Interrogator</Product>
   </PropertyGroup>
 
   <ItemGroup>

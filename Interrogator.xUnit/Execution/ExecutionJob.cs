@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -14,11 +15,12 @@ namespace Interrogator.xUnit.Execution
 	{
 		private const string _exceptionBoundries = "********************************************************************************";
 
-		private ExecutionJob(MethodInfo method, MethodInfo[] parameterMethods, MethodInfo[] constructorParameterMethods, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, Exception>>> execute, Action<string> abort)
+		private ExecutionJob(MethodInfo method, MethodInfo[] parameterMethods, Option<ConstructorInfo> constructor, MethodInfo[] constructorParameterMethods, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, Exception>>> execute, Action<string> abort)
 		{
 			Method = method;
 			Status = parameterMethods.Length == 0 && constructorParameterMethods.Length == 0 ? ExecutionStatus.Ready : ExecutionStatus.NotReady;
 			ParameterMethods = parameterMethods;
+			Constructor = constructor;
 			ConstructorParameterMethods = constructorParameterMethods;
 			ErrorMessage = Option.None<string>();
 
@@ -38,6 +40,8 @@ namespace Interrogator.xUnit.Execution
 			_execute = execute;
 			_abort = abort;
 		}
+
+		public Option<ConstructorInfo> Constructor { get; }
 
 		public MethodInfo Method { get; }
 
@@ -126,25 +130,41 @@ namespace Interrogator.xUnit.Execution
 			=> _abort.Invoke($"The sources for the following parameters failed:{String.Join("", GetAbortMessage(jobs).Select(str => $"{Environment.NewLine}{str}"))}");
 
 		private IEnumerable<string> GetAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs)
-		{
-			var parameters = Method.GetParameters();
+			=> Constructor
+				.Match
+				(
+					constructor => GetParametersAbortMessage(jobs, constructor.GetParameters(), _constructorArguments, ConstructorParameterMethods, "Constructor Parameter"),
+					Enumerable.Empty<string>
+				)
+				.Concat(GetParametersAbortMessage(jobs, Method.GetParameters(), _methodArguments, ParameterMethods, "Method Parameter"))
+				.Concat(_exception.Match(ex => new[] { $"{_exceptionBoundries}{Environment.NewLine}{GetExceptionMessage(ex)}{Environment.NewLine}{_exceptionBoundries}" }, () => Array.Empty<string>()));
 
-			return _methodArguments
+		private static IEnumerable<string> GetParametersAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs, ParameterInfo[] parameters, Option<Option<object>>[] parameterArguments, IReadOnlyList<MethodInfo> parameterMethods, string prefix)
+			=> parameterArguments
 				.Select((o, i) => o.Match(_ => null, () => (int?)i))
 				.Where(i => i != null)
-				.Select(i => (parameter: parameters[i.Value], source: ParameterMethods[i.Value]))
-				.SelectMany(set => GetMissingParameterMessages(jobs, set.parameter, set.source))
-				.Select(str => str.FirstOrDefault() != '*' ? $"\t{str}" : str)
-				.Concat(_exception.Match(ex => new[] { $"{_exceptionBoundries}{Environment.NewLine}{ex.ToString()}{Environment.NewLine}{_exceptionBoundries}" }, () => Array.Empty<string>()));
-		}
+				.Select(i => (parameter: parameters[i.Value], source: parameterMethods[i.Value]))
+				.SelectMany(set => GetMissingParameterMessages(jobs, set.parameter, set.source, prefix))
+				.Select(str => str.FirstOrDefault() != '*' ? $"\t{str}" : str);
 
-		private IEnumerable<string> GetMissingParameterMessages(Dictionary<MethodInfo, ExecutionJob> jobs, ParameterInfo parameter, MethodInfo source)
+		private static IEnumerable<string> GetMissingParameterMessages(Dictionary<MethodInfo, ExecutionJob> jobs, ParameterInfo parameter, MethodInfo source, string prefix)
 		{
 			return new[] 
 			{
-				$"{parameter.Name} <- {source.DeclaringType.FullName}.{source.Name}({String.Join(",", source.GetParameters().Select(p => p.ParameterType.Name))})"
+				$"{prefix}: {parameter.Name} <- {source.DeclaringType.FullName}.{source.Name}({String.Join(",", source.GetParameters().Select(p => p.ParameterType.Name))})"
 			}
 			.Concat(jobs[source].GetAbortMessage(jobs));
+		}
+
+		private static string GetExceptionMessage(Exception exception)
+		{
+			if (exception is TargetInvocationException invocationException)
+				exception = invocationException.InnerException;
+
+			if (exception is AggregateException aggregateException && aggregateException.InnerExceptions.Count == 1)
+				exception = aggregateException.InnerException;
+
+			return exception.ToString();
 		}
 
 		public static ExecutionJob Create(MethodInfo testMethod, string errorMessage, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, Exception>>> execute, Action<string> abort) 
@@ -157,28 +177,30 @@ namespace Interrogator.xUnit.Execution
 					methodParameters => GetConstructorParameters(testMethod)
 						.Match
 						(
-							constructorParameters => new ExecutionJob(testMethod, methodParameters, constructorParameters, execute, abort),
+							info => new ExecutionJob(testMethod, methodParameters, info.constructor, info.constructorParameters, execute, abort),
 							error => new ExecutionJob(testMethod, error, execute, abort)
 						),
 					error => new ExecutionJob(testMethod, error, execute, abort)
 				);
 
-		private static Result<MethodInfo[], string> GetConstructorParameters(MethodInfo testMethod)
+		private static Result<(Option<ConstructorInfo> constructor, MethodInfo[] constructorParameters), string> GetConstructorParameters(MethodInfo testMethod)
 		{
 			if (testMethod.IsStatic)
-				return Result.Success<MethodInfo[], string>(Array.Empty<MethodInfo>());
+				return Result.Success<(Option<ConstructorInfo>, MethodInfo[]), string>((Option.None<ConstructorInfo>(), Array.Empty<MethodInfo>()));
 
 			var constructors = testMethod
 				.DeclaringType
 				.GetConstructors();
 
 			if (constructors.Length == 0)
-				return Result.Success<MethodInfo[], string>(Array.Empty<MethodInfo>());
+				return Result.Success<(Option<ConstructorInfo>, MethodInfo[]), string>((Option.None<ConstructorInfo>(), Array.Empty<MethodInfo>()));
 
 			if (constructors.Length > 1)
-				return Result.Failure<MethodInfo[], string>("Only one constructor can be defined on the class.");
+				return Result.Failure<(Option<ConstructorInfo>, MethodInfo[]), string>("Only one constructor can be defined on the class.");
 
-			return GetParameters(testMethod.DeclaringType, constructors.First().GetParameters())
+			var constructor = constructors.First();
+
+			return GetParameters(testMethod.DeclaringType, constructor.GetParameters())
 				.Bind(methods => Option
 					.FromNullable(methods
 						.Where(method => !method.IsStatic && method.DeclaringType == testMethod.DeclaringType)
@@ -187,8 +209,8 @@ namespace Interrogator.xUnit.Execution
 					)
 					.Match
 					(
-						Result.Failure<MethodInfo[], string>,
-						() => Result.Success<MethodInfo[], string>(methods)
+						Result.Failure<(Option<ConstructorInfo>, MethodInfo[]), string>,
+						() => Result.Success<(Option<ConstructorInfo>, MethodInfo[]), string>((Option.Some(constructor), methods))
 					)
 				);
 		}
