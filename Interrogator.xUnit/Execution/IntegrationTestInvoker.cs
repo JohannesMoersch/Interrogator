@@ -38,7 +38,7 @@ namespace Interrogator.xUnit.Execution
 						else if (t.IsCanceled)
 							_resultCallback.Invoke(Result.Failure<Option<object>, Exception>(new TaskCanceledException()));
 						else if (IsGenericTaskType(t.GetType()))
-							_resultCallback.Invoke(Result.Success<Option<object>, Exception>(Option.FromNullable((object)((dynamic)t).Result)));
+							_resultCallback.Invoke(Result.Success<Option<object>, Exception>(Option.FromNullable(t.GetType().GetProperty(nameof(Task<object>.Result)).GetValue(t))));
 						else
 							_resultCallback.Invoke(Result.Success<Option<object>, Exception>(Option.None<object>()));
 

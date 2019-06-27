@@ -127,7 +127,7 @@ namespace Interrogator.xUnit.Execution
 		}
 
 		public void Abort(Dictionary<MethodInfo, ExecutionJob> jobs) 
-			=> _abort.Invoke($"The sources for the following parameters failed:{String.Join("", GetAbortMessage(jobs).Select(str => $"{Environment.NewLine}{str}"))}");
+			=> _abort.Invoke($"The following dependencies failed:{String.Join("", GetAbortMessage(jobs).Select(str => $"{Environment.NewLine}{str}"))}");
 
 		private IEnumerable<string> GetAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs)
 			=> Constructor
