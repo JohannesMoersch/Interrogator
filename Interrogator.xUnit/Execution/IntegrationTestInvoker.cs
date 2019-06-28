@@ -43,7 +43,8 @@ namespace Interrogator.xUnit.Execution
 							_resultCallback.Invoke(Result.Success<Option<object>, Exception>(Option.None<object>()));
 
 						return t;
-					});
+					})
+					.Unwrap();
 				}
 
 				_resultCallback.Invoke(Result.Success<Option<object>, Exception>(Option.FromNullable(result)));
