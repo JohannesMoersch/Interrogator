@@ -189,7 +189,7 @@ namespace Interrogator.xUnit.Execution
 
 		private static IEnumerable<string> GetDependenciesAbortMessage(Dictionary<MethodInfo, ExecutionJob> jobs, bool[] parameterMet, IReadOnlyList<MethodInfo> parameterMethods, string prefix, HashSet<MethodInfo> methodStack)
 			=> parameterMet
-				.Select((o, i) => o ? (int?)i : null)
+				.Select((o, i) => !o ? (int?)i : null)
 				.Where(i => i != null)
 				.SelectMany(i => GetMissingDependencyMessages(jobs, parameterMethods[i.Value], prefix, methodStack))
 				.Select(str => str.FirstOrDefault() != '*' ? $"\t{str}" : str);
@@ -225,31 +225,34 @@ namespace Interrogator.xUnit.Execution
 
 		public static ExecutionJob Create(MethodInfo testMethod, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, TestFailure>>> execute, Action<string> abort)
 			=> GetParameters(testMethod.DeclaringType, testMethod.GetParameters())
+				.Bind
+				(
+					methodParameters => GetDependencies(testMethod.DeclaringType, testMethod)
+						.Bind(methodDependencies => GetConstructorParameters(testMethod)
+							.Select(info => new ExecutionJob(testMethod, methodParameters, info.constructor, info.constructorParameters, methodDependencies, info.constructorDependencies, execute, abort)
+						)
+					)
+				)
 				.Match
 				(
-					methodParameters => GetConstructorParameters(testMethod)
-						.Match
-						(
-							info => new ExecutionJob(testMethod, methodParameters, info.constructor, info.constructorParameters, execute, abort),
-							error => new ExecutionJob(testMethod, error, execute, abort)
-						),
+					_ => _,
 					error => new ExecutionJob(testMethod, error, execute, abort)
 				);
 
-		private static Result<(Option<ConstructorInfo> constructor, MethodInfo[] constructorParameters), string> GetConstructorParameters(MethodInfo testMethod)
+		private static Result<(Option<ConstructorInfo> constructor, MethodInfo[] constructorParameters, MethodInfo[] constructorDependencies), string> GetConstructorParameters(MethodInfo testMethod)
 		{
 			if (testMethod.IsStatic)
-				return Result.Success<(Option<ConstructorInfo>, MethodInfo[]), string>((Option.None<ConstructorInfo>(), Array.Empty<MethodInfo>()));
+				return Result.Success<(Option<ConstructorInfo>, MethodInfo[], MethodInfo[]), string>((Option.None<ConstructorInfo>(), Array.Empty<MethodInfo>(), Array.Empty<MethodInfo>()));
 
 			var constructors = testMethod
 				.DeclaringType
 				.GetConstructors();
 
 			if (constructors.Length == 0)
-				return Result.Success<(Option<ConstructorInfo>, MethodInfo[]), string>((Option.None<ConstructorInfo>(), Array.Empty<MethodInfo>()));
+				return Result.Success<(Option<ConstructorInfo>, MethodInfo[], MethodInfo[]), string>((Option.None<ConstructorInfo>(), Array.Empty<MethodInfo>(), Array.Empty<MethodInfo>()));
 
 			if (constructors.Length > 1)
-				return Result.Failure<(Option<ConstructorInfo>, MethodInfo[]), string>("Only one constructor can be defined on the class.");
+				return Result.Failure<(Option<ConstructorInfo>, MethodInfo[], MethodInfo[]), string>("Only one constructor can be defined on the class.");
 
 			var constructor = constructors.First();
 
@@ -262,8 +265,9 @@ namespace Interrogator.xUnit.Execution
 					)
 					.Match
 					(
-						Result.Failure<(Option<ConstructorInfo>, MethodInfo[]), string>,
-						() => Result.Success<(Option<ConstructorInfo>, MethodInfo[]), string>((Option.Some(constructor), methods))
+						Result.Failure<(Option<ConstructorInfo>, MethodInfo[], MethodInfo[]), string>,
+						() => GetDependencies(testMethod.DeclaringType, constructor)
+							.Select(constructorDependencies => (Option.Some(constructor), methods, constructorDependencies))
 					)
 				);
 		}
@@ -291,5 +295,11 @@ namespace Interrogator.xUnit.Execution
 
 			return targetType.IsAssignableFrom(returnType);
 		}
+
+		private static Result<MethodInfo[], string> GetDependencies(Type classType, MemberInfo member)
+			=> member
+				.GetCustomAttributes<DependsOnAttribute>()
+				.Select(att => att.TryGetMethod(classType))
+				.TakeUntilFailure();
 	}
 }

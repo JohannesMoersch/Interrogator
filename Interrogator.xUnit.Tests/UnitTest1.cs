@@ -30,7 +30,7 @@ namespace Interrogator.xUnit.Tests
 			=> _message = message;
 
 		private int Source()
-			=> 10;
+			=> throw new Exception("Test");
 
 		[SkipTest]
 		public async Task<int> Test1([From(nameof(Source))]int source)
@@ -40,7 +40,8 @@ namespace Interrogator.xUnit.Tests
 		}
 
 		[IntegrationTest]
-		public void Blah([From(nameof(Test1))]int blah)
+		[DependsOn(nameof(Test1))]
+		public void Blah()
 		{
 		}
 
