@@ -42,7 +42,13 @@ namespace Interrogator.xUnit.Execution
 
 				while (newTestStates.Any())
 				{
-					var methods = newTestStates.SelectMany(testState => testState.ParameterMethods.Concat(testState.ConstructorParameterMethods)).ToArray();
+					var methods = newTestStates
+						.SelectMany(testState => testState
+							.ParameterMethods
+							.Concat(testState.ConstructorParameterMethods)
+							.Concat(testState.MethodDependencies)
+							.Concat(testState.ConstructorDependencies)
+						).ToArray();
 
 					newTestStates.Clear();
 
