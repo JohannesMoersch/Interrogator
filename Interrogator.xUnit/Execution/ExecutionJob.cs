@@ -15,30 +15,30 @@ namespace Interrogator.xUnit.Execution
 	{
 		private const string _exceptionBoundries = "********************************************************************************";
 
-		private ExecutionJob(MethodInfo method, MethodInfo[] parameterMethods, Option<ConstructorInfo> constructor, MethodInfo[] constructorParameterMethods, MethodInfo[] methodDependencies, MethodInfo[] constructorDependencies, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, TestFailure>>> execute, Action<string> abort)
+		private ExecutionJob(MethodInfo method, MethodInfo[] parameterMethods, Option<ConstructorInfo> constructor, MethodInfo[] constructorParameterMethods, (MethodInfo method, bool continueOnDependencyFailure)[] methodDependencies, (MethodInfo method, bool continueOnDependencyFailure)[] constructorDependencies, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, TestFailure>>> execute, Action<string> abort)
 		{
 			Method = method;
 			Status = parameterMethods.Length == 0 && constructorParameterMethods.Length == 0 && methodDependencies.Length == 0 && constructorDependencies.Length == 0 ? ExecutionStatus.Ready : ExecutionStatus.NotReady;
-			ParameterMethods = parameterMethods;
+			_parameterMethods = parameterMethods;
 			Constructor = constructor;
-			ConstructorParameterMethods = constructorParameterMethods;
-			MethodDependencies = methodDependencies;
-			ConstructorDependencies = constructorDependencies;
+			_constructorParameterMethods = constructorParameterMethods;
+			_methodDependencies = methodDependencies;
+			_constructorDependencies = constructorDependencies;
 			ErrorMessage = Option.None<string>();
 
 			_execute = execute;
 			_abort = abort;
-			_methodArguments = new Option<Option<object>>[ParameterMethods.Count];
-			_constructorArguments = new Option<Option<object>>[ConstructorParameterMethods.Count];
-			_methodDependenciesMet = new bool[MethodDependencies.Count];
-			_constructorDependenciesMet = new bool[ConstructorDependencies.Count];
+			_methodArguments = new Option<Option<object>>[_parameterMethods.Count];
+			_constructorArguments = new Option<Option<object>>[_constructorParameterMethods.Count];
+			_methodDependenciesMet = new bool[_methodDependencies.Count];
+			_constructorDependenciesMet = new bool[_constructorDependencies.Count];
 		}
 
 		private ExecutionJob(MethodInfo method, string errorMessage, Func<(object[] methodArguments, object[] constructorArguments), CancellationTokenSource, Task<Result<Option<object>, TestFailure>>> execute, Action<string> abort)
 		{
 			Method = method;
 			Status = ExecutionStatus.Ready;
-			ParameterMethods = new MethodInfo[0];
+			_parameterMethods = new MethodInfo[0];
 			ErrorMessage = Option.Some(errorMessage ?? throw new ArgumentNullException(nameof(errorMessage)));
 
 			_execute = execute;
@@ -51,13 +51,19 @@ namespace Interrogator.xUnit.Execution
 
 		public ExecutionStatus Status { get; private set; }
 
-		public IReadOnlyList<MethodInfo> ParameterMethods { get; }
+		private readonly IReadOnlyList<MethodInfo> _parameterMethods;
 
-		public IReadOnlyList<MethodInfo> ConstructorParameterMethods { get; }
+		private readonly IReadOnlyList<MethodInfo> _constructorParameterMethods;
 
-		public IReadOnlyList<MethodInfo> MethodDependencies { get; }
+		private readonly IReadOnlyList<(MethodInfo method, bool continueOnDependencyFailure)> _methodDependencies;
 
-		public IReadOnlyList<MethodInfo> ConstructorDependencies { get; }
+		private readonly IReadOnlyList<(MethodInfo method, bool continueOnDependencyFailure)> _constructorDependencies;
+
+		public IEnumerable<MethodInfo> Dependencies
+			=> _parameterMethods
+				.Concat(_constructorParameterMethods)
+				.Concat(_methodDependencies.Select(set => set.method))
+				.Concat(_constructorDependencies.Select(set => set.method));
 
 		public Option<string> ErrorMessage { get; }
 
@@ -75,47 +81,53 @@ namespace Interrogator.xUnit.Execution
 
 		private Option<TestFailure> _failure;
 
-		public void SetParameter(MethodInfo methodInfo, Option<object> value)
+		public void SetParameterSuccess(MethodInfo methodInfo, Option<object> value)
 		{
 			if (Status != ExecutionStatus.NotReady)
 				return;
 
-			bool ready = true;
-			for (int i = 0; i < ParameterMethods.Count; ++i)
+			for (int i = 0; i < _parameterMethods.Count; ++i)
 			{
-				if (ParameterMethods[i] == methodInfo && _methodArguments[i] == Option.None<Option<object>>())
+				if (_parameterMethods[i] == methodInfo && _methodArguments[i] == Option.None<Option<object>>())
 					_methodArguments[i] = Option.Some(value);
-				else if (_methodArguments[i] == Option.None<Option<object>>())
-					ready = false;
 			}
 
-			for (int i = 0; i < ConstructorParameterMethods.Count; ++i)
+			for (int i = 0; i < _constructorParameterMethods.Count; ++i)
 			{
-				if (ConstructorParameterMethods[i] == methodInfo && _constructorArguments[i] == Option.None<Option<object>>())
+				if (_constructorParameterMethods[i] == methodInfo && _constructorArguments[i] == Option.None<Option<object>>())
 					_constructorArguments[i] = Option.Some(value);
-				else if (_constructorArguments[i] == Option.None<Option<object>>())
-					ready = false;
 			}
 
-			for (int i = 0; i < MethodDependencies.Count; ++i)
-			{
-				if (MethodDependencies[i] == methodInfo && !_methodDependenciesMet[i])
-					_methodDependenciesMet[i] = true;
-				else if (!_methodDependenciesMet[i])
-					ready = false;
-			}
-
-			for (int i = 0; i < ConstructorDependencies.Count; ++i)
-			{
-				if (ConstructorDependencies[i] == methodInfo && !_constructorDependenciesMet[i])
-					_constructorDependenciesMet[i] = true;
-				else if (!_constructorDependenciesMet[i])
-					ready = false;
-			}
-
-			if (ready)
+			if (CheckIsReady())
 				Status = ExecutionStatus.Ready;
 		}
+
+		public void SetDependencyComplete(MethodInfo methodInfo, bool isSuccess)
+		{
+			if (Status != ExecutionStatus.NotReady)
+				return;
+
+			for (int i = 0; i < _methodDependencies.Count; ++i)
+			{
+				if (_methodDependencies[i].method == methodInfo && (isSuccess || _methodDependencies[i].continueOnDependencyFailure) && !_methodDependenciesMet[i])
+					_methodDependenciesMet[i] = true;
+			}
+
+			for (int i = 0; i < _constructorDependencies.Count; ++i)
+			{
+				if (_constructorDependencies[i].method == methodInfo && (isSuccess || _constructorDependencies[i].continueOnDependencyFailure) &&!_constructorDependenciesMet[i])
+					_constructorDependenciesMet[i] = true;
+			}
+
+			if (CheckIsReady())
+				Status = ExecutionStatus.Ready;
+		}
+
+		private bool CheckIsReady()
+			=> _methodArguments.All(o => o != Option.None<Option<object>>())
+			&& _constructorArguments.All(o => o != Option.None<Option<object>>())
+			&& _methodDependenciesMet.All(o => o)
+			&& _constructorDependenciesMet.All(o => o);
 
 		public async Task<Result<Option<object>, Unit>> Execute(CancellationTokenSource cancellationTokenSource)
 		{
@@ -165,12 +177,12 @@ namespace Interrogator.xUnit.Execution
 			return Constructor
 				  .Match
 				  (
-					  constructor => GetParametersAbortMessage(jobs, constructor.GetParameters(), _constructorArguments, ConstructorParameterMethods, "Constructor Parameter", methodStack)
-						.Concat(GetDependenciesAbortMessage(jobs, _constructorDependenciesMet, ConstructorDependencies, "Constructor Dependency", methodStack)),
+					  constructor => GetParametersAbortMessage(jobs, constructor.GetParameters(), _constructorArguments, _constructorParameterMethods, "Constructor Parameter", methodStack)
+						.Concat(GetDependenciesAbortMessage(jobs, _constructorDependenciesMet, _constructorDependencies.Select(set => set.method).ToArray(), "Constructor Dependency", methodStack)),
 					  Enumerable.Empty<string>
 				  )
-				  .Concat(GetParametersAbortMessage(jobs, Method.GetParameters(), _methodArguments, ParameterMethods, "Method Parameter", methodStack))
-				  .Concat(GetDependenciesAbortMessage(jobs, _methodDependenciesMet, MethodDependencies, "Method Dependency", methodStack))
+				  .Concat(GetParametersAbortMessage(jobs, Method.GetParameters(), _methodArguments, _parameterMethods, "Method Parameter", methodStack))
+				  .Concat(GetDependenciesAbortMessage(jobs, _methodDependenciesMet, _methodDependencies.Select(set => set.method).ToArray(), "Method Dependency", methodStack))
 				  .Concat(_failure.Match(failure => GetFailureMessage(failure), () => Enumerable.Empty<string>()));
 		}
 
@@ -241,20 +253,20 @@ namespace Interrogator.xUnit.Execution
 					error => new ExecutionJob(testMethod, error, execute, abort)
 				);
 
-		private static Result<(Option<ConstructorInfo> constructor, MethodInfo[] constructorParameters, MethodInfo[] constructorDependencies), string> GetConstructorParameters(MethodInfo testMethod)
+		private static Result<(Option<ConstructorInfo> constructor, MethodInfo[] constructorParameters, (MethodInfo method, bool continueOnDependencyFailure)[] constructorDependencies), string> GetConstructorParameters(MethodInfo testMethod)
 		{
 			if (testMethod.IsStatic)
-				return Result.Success<(Option<ConstructorInfo>, MethodInfo[], MethodInfo[]), string>((Option.None<ConstructorInfo>(), Array.Empty<MethodInfo>(), Array.Empty<MethodInfo>()));
+				return Result.Success<(Option<ConstructorInfo>, MethodInfo[], (MethodInfo method, bool continueOnDependencyFailure)[]), string>((Option.None<ConstructorInfo>(), Array.Empty<MethodInfo>(), Array.Empty<(MethodInfo method, bool continueOnDependencyFailure)>()));
 
 			var constructors = testMethod
 				.DeclaringType
 				.GetConstructors();
 
 			if (constructors.Length == 0)
-				return Result.Success<(Option<ConstructorInfo>, MethodInfo[], MethodInfo[]), string>((Option.None<ConstructorInfo>(), Array.Empty<MethodInfo>(), Array.Empty<MethodInfo>()));
+				return Result.Success<(Option<ConstructorInfo>, MethodInfo[], (MethodInfo method, bool continueOnDependencyFailure)[]), string>((Option.None<ConstructorInfo>(), Array.Empty<MethodInfo>(), Array.Empty<(MethodInfo method, bool continueOnDependencyFailure)>()));
 
 			if (constructors.Length > 1)
-				return Result.Failure<(Option<ConstructorInfo>, MethodInfo[], MethodInfo[]), string>("Only one constructor can be defined on the class.");
+				return Result.Failure<(Option<ConstructorInfo>, MethodInfo[], (MethodInfo method, bool continueOnDependencyFailure)[]), string>("Only one constructor can be defined on the class.");
 
 			var constructor = constructors.First();
 
@@ -267,7 +279,7 @@ namespace Interrogator.xUnit.Execution
 					)
 					.Match
 					(
-						Result.Failure<(Option<ConstructorInfo>, MethodInfo[], MethodInfo[]), string>,
+						Result.Failure<(Option<ConstructorInfo>, MethodInfo[], (MethodInfo method, bool continueOnDependencyFailure)[]), string>,
 						() => GetDependencies(testMethod.DeclaringType, constructor)
 							.Select(constructorDependencies => (Option.Some(constructor), methods, constructorDependencies))
 					)
@@ -298,10 +310,10 @@ namespace Interrogator.xUnit.Execution
 			return targetType.IsAssignableFrom(returnType);
 		}
 
-		private static Result<MethodInfo[], string> GetDependencies(Type classType, MemberInfo member)
+		private static Result<(MethodInfo method, bool continueOnDependencyFailure)[], string> GetDependencies(Type classType, MemberInfo member)
 			=> member
 				.GetCustomAttributes<DependsOnAttribute>()
-				.Select(att => att.TryGetMethod(classType))
+				.Select(att => att.TryGetMethod(classType).Select(method => (method, att.ContinueOnDependencyFailure)))
 				.TakeUntilFailure();
 	}
 }

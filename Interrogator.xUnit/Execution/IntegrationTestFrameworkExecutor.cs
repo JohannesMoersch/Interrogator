@@ -57,12 +57,8 @@ namespace Interrogator.xUnit.Execution
 				while (newTestStates.Any())
 				{
 					var methods = newTestStates
-						.SelectMany(testState => testState
-							.ParameterMethods
-							.Concat(testState.ConstructorParameterMethods)
-							.Concat(testState.MethodDependencies)
-							.Concat(testState.ConstructorDependencies)
-						).ToArray();
+						.SelectMany(testState => testState.Dependencies)
+						.ToArray();
 
 					newTestStates.Clear();
 
@@ -112,11 +108,20 @@ namespace Interrogator.xUnit.Execution
 						success =>
 						{
 							foreach (var state in jobs.Values)
-								state.SetParameter(completed.method, success);
+							{
+								state.SetParameterSuccess(completed.method, success);
+								state.SetDependencyComplete(completed.method, true);
+							}
 
 							return Unit.Value;
 						},
-						failure => Unit.Value
+						failure =>
+						{
+							foreach (var state in jobs.Values)
+								state.SetDependencyComplete(completed.method, false);
+
+							return Unit.Value;
+						}
 					);
 			}
 

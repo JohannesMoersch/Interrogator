@@ -16,6 +16,8 @@ namespace Interrogator.xUnit
 
 		private Type[] _parameterTypes;
 
+		public bool ContinueOnDependencyFailure { get; set; }
+
 		public DependsOnAttribute(string methodName)
 			: this(null, methodName, null)
 		{ }

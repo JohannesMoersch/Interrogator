@@ -37,11 +37,12 @@ namespace Interrogator.xUnit.Tests
 		public async Task<int> Test1([From(nameof(Source))]int source)
 		{
 			await Task.Delay(source);
+			throw new Exception();
 			return 1;
 		}
 
 		[IntegrationTest]
-		[DependsOn(nameof(Test1))]
+		[DependsOn(nameof(Test1), ContinueOnDependencyFailure = true)]
 		public void Blah()
 		{
 		}
