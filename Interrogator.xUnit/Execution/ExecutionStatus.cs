@@ -8,6 +8,7 @@ namespace Interrogator.xUnit.Execution
 	{
 		NotReady,
 		Ready,
+		Executing,
 		NotComplete,
 		Complete
 	}

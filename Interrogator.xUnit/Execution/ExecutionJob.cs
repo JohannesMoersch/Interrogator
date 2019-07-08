@@ -130,6 +130,8 @@ namespace Interrogator.xUnit.Execution
 				.Select(obj => obj.Match(o => o.Match(_ => _, () => default), () => default))
 				.ToArray();
 
+			Status = ExecutionStatus.Executing;
+
 			var result = await _execute.Invoke((methodArguments, constructorArguments), cancellationTokenSource);
 
 			return result

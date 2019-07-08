@@ -10,6 +10,7 @@ using Interrogator.xUnit.Common;
 using Interrogator.xUnit.Discovery;
 using Interrogator.xUnit.Infrastructure;
 using Xunit.Sdk;
+using System.Security;
 
 namespace Interrogator.xUnit.Execution
 {
@@ -28,6 +29,19 @@ namespace Interrogator.xUnit.Execution
 
 		protected override void RunTestCases(IEnumerable<IntegrationTestCase> testCases, IMessageSink executionMessageSink, ITestFrameworkExecutionOptions executionOptions)
 		{
+			var disableParallelization = executionOptions.DisableParallelization() ?? false;
+			var maxParallelThreads = disableParallelization ? 1 : (executionOptions.MaxParallelThreads() ?? 0);
+
+			if (maxParallelThreads <= 0)
+				maxParallelThreads = Environment.ProcessorCount;
+
+			SynchronizationContext oldSynchronizationContext = null;
+			if (maxParallelThreads > 1 && MaxConcurrencySyncContext.IsSupported)
+			{
+				oldSynchronizationContext = SynchronizationContext.Current;
+				SetSynchronizationContext(new MaxConcurrencySyncContext(maxParallelThreads));
+			}
+
 			using (var messageBus = CreateMessageBus(executionMessageSink, executionOptions))
 			{
 				var aggregator = new ExceptionAggregator();
@@ -63,44 +77,72 @@ namespace Interrogator.xUnit.Execution
 					}
 				}
 
-				messageBus.QueueMessage(new TestAssemblyStarting(testCases, _testAssembly, DateTime.Now, "Test Environment", "Test Framework Display Name"));
+				messageBus.QueueMessage(new TestAssemblyStarting(testCases, _testAssembly, DateTime.Now, $"Interrogator {(disableParallelization ? "non-parallel" : $"parallel ({maxParallelThreads} threads)")}", "Interrogator Test Framework"));
 
-				while (true)
-				{
-					var set = jobs.FirstOrDefault(s => s.Value.Status == ExecutionStatus.Ready);
-
-					if (set.Value == null)
-						break;
-
-					var result = set.Value.Execute(cancellationTokenSource).Result;
-
-					result
-						.Match
-						(
-							success =>
-							{
-								foreach (var state in jobs.Values)
-									state.SetParameter(set.Key, success);
-
-								return Unit.Value;
-							},
-							failure => Unit.Value
-						);
-				}
-
-				foreach (var state in jobs.Values.Where(state => state.Status == ExecutionStatus.NotReady))
-					state.Abort(jobs);
+				ExecuteJobs(jobs, cancellationTokenSource).Wait();
 
 				messageBus.QueueMessage(new TestAssemblyFinished(testCases, _testAssembly, 1.0m, 1, 0, 0));
 			}
+
+			if (oldSynchronizationContext != null)
+				SetSynchronizationContext(oldSynchronizationContext);
 		}
 
-		static IMessageBus CreateMessageBus(IMessageSink messageSink, ITestFrameworkExecutionOptions options)
+		private async Task ExecuteJobs(Dictionary<MethodInfo, ExecutionJob> jobs, CancellationTokenSource cancellationTokenSource)
 		{
-			if (options.SynchronousMessageReportingOrDefault())
-				return new SynchronousMessageBus(messageSink);
+			var tasks = new List<Task<(MethodInfo method, Result<Option<object>, Unit> result)>>();
+			while (true)
+			{
+				foreach (var ready in jobs.Where(s => s.Value.Status == ExecutionStatus.Ready))
+					tasks.Add(ExecuteJob(ready.Key, ready.Value, cancellationTokenSource));
 
-			return new MessageBus(messageSink);
+				if (!tasks.Any())
+					break;
+
+				var completedTask = await Task.WhenAny(tasks);
+
+				tasks.Remove(completedTask);
+
+				var completed = await completedTask;
+
+				completed
+					.result
+					.Match
+					(
+						success =>
+						{
+							foreach (var state in jobs.Values)
+								state.SetParameter(completed.method, success);
+
+							return Unit.Value;
+						},
+						failure => Unit.Value
+					);
+			}
+
+			foreach (var state in jobs.Values.Where(state => state.Status == ExecutionStatus.NotReady))
+				state.Abort(jobs);
+		}
+
+		private async Task<(MethodInfo method, Result<Option<object>, Unit> result)> ExecuteJob(MethodInfo method, ExecutionJob job, CancellationTokenSource cancellationTokenSource)
+		{
+			try
+			{
+				Task<Result<Option<object>, Unit>> result;
+				if (SynchronizationContext.Current != null)
+				{
+					var scheduler = TaskScheduler.FromCurrentSynchronizationContext();
+					result = Task.Factory.StartNew(() => job.Execute(cancellationTokenSource), cancellationTokenSource.Token, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.HideScheduler, scheduler).Unwrap();
+				}
+				else
+					result = Task.Run(() => job.Execute(cancellationTokenSource), cancellationTokenSource.Token);
+
+				return (method, await result);
+			}
+			catch
+			{
+				return (method, Result.Failure<Option<object>, Unit>(Unit.Value));
+			}
 		}
 
 		protected override ITestFrameworkDiscoverer CreateDiscoverer()
@@ -108,5 +150,17 @@ namespace Interrogator.xUnit.Execution
 
 		public ITestFrameworkDiscoverer GetDiscoverer()
 			=> CreateDiscoverer();
+
+		private static IMessageBus CreateMessageBus(IMessageSink messageSink, ITestFrameworkExecutionOptions options)
+		{
+			if (options.SynchronousMessageReportingOrDefault())
+				return new SynchronousMessageBus(messageSink);
+
+			return new MessageBus(messageSink);
+		}
+
+		[SecuritySafeCritical]
+		private static void SetSynchronizationContext(SynchronizationContext context)
+			=> SynchronizationContext.SetSynchronizationContext(context);
 	}
 }
