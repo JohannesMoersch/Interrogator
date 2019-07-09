@@ -3,9 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28705.295
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interrogator.xUnit", "Interrogator.xUnit\Interrogator.xUnit.csproj", "{4148BB08-BDDB-412E-BE3B-1EB4464361A7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Interrogator.xUnit", "Interrogator.xUnit\Interrogator.xUnit.csproj", "{4148BB08-BDDB-412E-BE3B-1EB4464361A7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interrogator.xUnit.Tests", "Interrogator.xUnit.Tests\Interrogator.xUnit.Tests.csproj", "{29CF1A2A-A675-4F08-8814-1054D4690972}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Interrogator.xUnit.Tests", "Interrogator.xUnit.Tests\Interrogator.xUnit.Tests.csproj", "{29CF1A2A-A675-4F08-8814-1054D4690972}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interrogator.Http", "Interrogator.Http\Interrogator.Http.csproj", "{44D5110B-7496-4450-81FC-327A5D65DF68}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interrogator.Http.Tests", "Interrogator.Http.Tests\Interrogator.Http.Tests.csproj", "{FD0E02FA-C703-49A1-BF47-102C01BC18C8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +25,14 @@ Global
 		{29CF1A2A-A675-4F08-8814-1054D4690972}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{29CF1A2A-A675-4F08-8814-1054D4690972}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{29CF1A2A-A675-4F08-8814-1054D4690972}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44D5110B-7496-4450-81FC-327A5D65DF68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44D5110B-7496-4450-81FC-327A5D65DF68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44D5110B-7496-4450-81FC-327A5D65DF68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44D5110B-7496-4450-81FC-327A5D65DF68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD0E02FA-C703-49A1-BF47-102C01BC18C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD0E02FA-C703-49A1-BF47-102C01BC18C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD0E02FA-C703-49A1-BF47-102C01BC18C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD0E02FA-C703-49A1-BF47-102C01BC18C8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
