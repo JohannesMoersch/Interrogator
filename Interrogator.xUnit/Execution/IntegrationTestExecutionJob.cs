@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,10 +14,16 @@ namespace Interrogator.xUnit.Execution
 	{
 		public static ExecutionJob Create(IntegrationTestCase testCase, IMessageBus messageBus)
 		{
-			if (testCase is ErrorIntegrationTestCase errorTestCase)
-				return ExecutionJob.Create(testCase.Method.ToRuntimeMethod(), errorTestCase.ErrorMessage, (arguments, cancellationTokenSource) => FailTest(testCase, messageBus, errorTestCase.ErrorMessage), abortMessage => AbortTest(testCase, messageBus, abortMessage));
+			var method = testCase.Method.ToRuntimeMethod();
 
-			return ExecutionJob.Create(testCase.Method.ToRuntimeMethod(), (arguments, cancellationTokenSource) => ExecuteTest(testCase, messageBus, arguments.methodArguments, arguments.constructorArguments, cancellationTokenSource), abortMessage => AbortTest(testCase, messageBus, abortMessage));
+			return Result
+				.Create(!(testCase is ErrorIntegrationTestCase), () => method, () => (testCase as ErrorIntegrationTestCase).ErrorMessage)
+				.Bind(ExecutionData.Create)
+				.Match
+				(
+					executionData => ExecutionJob.Create(method, executionData, (arguments, cts) => ExecuteTest(testCase, messageBus, arguments.methodArguments, arguments.constructorArguments, cts), abortMessage => AbortTest(testCase, messageBus, abortMessage)),
+					errorMessage => ExecutionJob.Create(method, ExecutionData.Empty, (arguments, cts) => FailTest(testCase, messageBus, errorMessage), abortMessage => AbortTest(testCase, messageBus, abortMessage))
+				);
 		}
 
 		private static void SendStartMessages(IntegrationTestCase testCase, IMessageBus messageBus)

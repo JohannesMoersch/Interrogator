@@ -44,6 +44,11 @@ namespace Interrogator.xUnit.Tests
 		[IntegrationTest]
 		[DependsOn(nameof(Test1), ContinueOnDependencyFailure = true)]
 		public void Blah()
+			=> Thread.Sleep(2000);
+
+		[IntegrationTest]
+		[DependsOn(nameof(Blah))]
+		public void Things()
 		{
 		}
 
@@ -55,6 +60,25 @@ namespace Interrogator.xUnit.Tests
 		public static int Test3([From(nameof(Test1))]int stuff)
 		{
 			return 0;
+		}
+
+		[IntegrationTest]
+		public static Task TestTask()
+			=> Task.CompletedTask;
+
+		[IntegrationTest]
+		public static void DependsOnTask([From(nameof(TestTask))]int input)
+		{
+		}
+
+		[IntegrationTest]
+		public static void TestVoid()
+		{
+		}
+
+		[IntegrationTest]
+		public static void DependsOnVoid([From(nameof(TestVoid))]int input)
+		{
 		}
 	}
 

@@ -16,12 +16,12 @@ namespace Interrogator.xUnit.Execution
 	internal static class MethodExecutionJob
 	{
 		public static ExecutionJob Create(MethodInfo method)
-			=> ExecutionJob
-				.Create
+			=> ExecutionData
+				.Create(method)
+				.Match
 				(
-					 method,
-					 (arguments, cts) => ExecuteTest(method, arguments.methodArguments, arguments.constructorArguments, cts),
-					 _ => { }
+					executionData => ExecutionJob.Create(method, executionData, (arguments, cts) => ExecuteTest(method, arguments.methodArguments, arguments.constructorArguments, cts), _ => { }),
+					errorMessage => ExecutionJob.Create(method, ExecutionData.Empty, (arguments, cts) => Task.FromResult(Result.Failure<Option<object>, TestFailure>(new TestFailure(errorMessage))), _ => { })
 				);
 
 		private static async Task<Result<Option<object>, TestFailure>> ExecuteTest(MethodInfo method, object[] methodArguments, object[] constructorArguments, CancellationTokenSource cancellationTokenSource)
