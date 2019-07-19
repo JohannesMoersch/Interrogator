@@ -9,8 +9,8 @@ namespace Interrogator.Http
 {
 	public static class HttpRequestBuilderExtensions
 	{
-		public static HttpRequestBuilder WithHeader(this HttpRequestBuilder requestBuilder, string header, string value)
-			=> new HttpRequestBuilder(requestBuilder.Client, requestBuilder.Method, requestBuilder.Headers.Append(new HttpHeader(header, value)));
+		public static HttpRequestBuilder WithHeader(this HttpRequestBuilder requestBuilder, string name, string value)
+			=> new HttpRequestBuilder(requestBuilder.Client, requestBuilder.Method, requestBuilder.Address, requestBuilder.Headers.Append(new HttpHeader(name, value)));
 
 		public static HttpRequestBuilder WithAuthorization(this HttpRequestBuilder requestBuilder, string value)
 			=> requestBuilder.WithHeader("Authorization", value);
@@ -22,18 +22,22 @@ namespace Interrogator.Http
 			=> requestBuilder.WithHeader("Accept-Language", value);
 
 		public static HttpRequestBuilderWithBody WithBody(this HttpRequestBuilder requestBuilder, HttpContent content)
-			=> new HttpRequestBuilderWithBody(requestBuilder.Client, requestBuilder.Method, requestBuilder.Headers, content);
+			=> new HttpRequestBuilderWithBody(requestBuilder.Client, requestBuilder.Method, requestBuilder.Address, requestBuilder.Headers, content);
 
 		public static HttpRequestBuilderWithBody WithStringBody(this HttpRequestBuilder requestBuilder, string content, string contentType)
-		{
-			var stringContent = new StringContent(content);
-
-			stringContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
-
-			return new HttpRequestBuilderWithBody(requestBuilder.Client, requestBuilder.Method, requestBuilder.Headers, stringContent);
-		}
+			=> new HttpRequestBuilderWithBody
+			(
+				requestBuilder.Client, 
+				requestBuilder.Method, 
+				requestBuilder.Address, 
+				requestBuilder.Headers.Append(new HttpHeader("content-type", contentType)), 
+				new StringContent(content)
+			);
 
 		public static HttpRequestBuilderWithBody WithJsonBody(this HttpRequestBuilder requestBuilder, string json)
 			=> requestBuilder.WithStringBody(json, "application/json");
+
+		public static HttpRequestBuilderWithoutBody WithoutBody(this HttpRequestBuilder requestBuilder)
+			=> new HttpRequestBuilderWithoutBody(requestBuilder.Client, requestBuilder.Method, requestBuilder.Address, requestBuilder.Headers);
 	}
 }

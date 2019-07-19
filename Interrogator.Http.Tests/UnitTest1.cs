@@ -9,8 +9,12 @@ namespace Interrogator.Http.Tests
 		[Fact]
 		public void Test1()
 		{
-			HttpClient a;
-			a.Get().WithAuthorization("Bearer ashfjashkfa").WithJsonBody("{\"abc\": 10}");
+			((HttpClient)null)
+				.Build()
+				.Get("/stuff/12")
+				.WithHeader("Stuff", "Value")
+				.WithJsonBody("Some Json");
+				
 		}
 	}
 }

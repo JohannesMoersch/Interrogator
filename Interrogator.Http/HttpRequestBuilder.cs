@@ -8,16 +8,19 @@ namespace Interrogator.Http
 {
 	public class HttpRequestBuilder
 	{
-		internal HttpClient Client { get; }
+		public HttpClient Client { get; }
 
-		internal HttpMethod Method { get; }
+		public HttpMethod Method { get; }
 
-		internal IReadOnlyList<HttpHeader> Headers { get; }
+		public string Address { get; }
 
-		internal HttpRequestBuilder(HttpClient client, HttpMethod method, IEnumerable<HttpHeader> headers)
+		public IReadOnlyList<HttpHeader> Headers { get; }
+
+		internal HttpRequestBuilder(HttpClient client, HttpMethod method, string address, IEnumerable<HttpHeader> headers)
 		{
 			Client = client;
 			Method = method;
+			Address = address;
 			Headers = headers.ToArray();
 		}
 	}

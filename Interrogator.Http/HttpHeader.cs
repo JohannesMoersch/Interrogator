@@ -4,15 +4,15 @@ using System.Text;
 
 namespace Interrogator.Http
 {
-	internal struct HttpHeader
+	public struct HttpHeader
 	{
-		public string Header { get; }
+		public string Name { get; }
 
 		public string Value { get; }
 
-		public HttpHeader(string header, string value)
+		public HttpHeader(string name, string value)
 		{
-			Header = header;
+			Name = name;
 			Value = value;
 		}
 	}

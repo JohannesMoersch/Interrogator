@@ -1,24 +1,13 @@
 ﻿using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Text;
 
 namespace Interrogator.Http
 {
 	public static class HttpClientExtensions
 	{
-		public static HttpRequestBuilder Get(this HttpClient httpClient)
-			=> new HttpRequestBuilder(httpClient, HttpMethod.Get, Enumerable.Empty<HttpHeader>());
-
-		public static HttpRequestBuilder Post(this HttpClient httpClient)
-			=> new HttpRequestBuilder(httpClient, HttpMethod.Post, Enumerable.Empty<HttpHeader>());
-
-		public static HttpRequestBuilder Put(this HttpClient httpClient)
-			=> new HttpRequestBuilder(httpClient, HttpMethod.Put, Enumerable.Empty<HttpHeader>());
-
-		public static HttpRequestBuilder Patch(this HttpClient httpClient)
-			=> new HttpRequestBuilder(httpClient, HttpMethod.Patch, Enumerable.Empty<HttpHeader>());
-
-		public static HttpRequestBuilder Delete(this HttpClient httpClient)
-			=> new HttpRequestBuilder(httpClient, HttpMethod.Delete, Enumerable.Empty<HttpHeader>());
+		public static UntypedHttpRequestBuilder Build(this HttpClient client)
+			=> new UntypedHttpRequestBuilder(client);
 	}
 }
