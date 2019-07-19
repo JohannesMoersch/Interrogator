@@ -4,9 +4,9 @@ using System.Text;
 
 namespace Interrogator.Http
 {
-	public class RequestHasNoContentException : Exception
+	public class HttpAssertionException : Exception
 	{
-		internal RequestHasNoContentException(string message)
+		internal HttpAssertionException(string message)
 			: base(message)
 		{
 		}

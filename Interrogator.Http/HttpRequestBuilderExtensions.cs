@@ -9,17 +9,17 @@ namespace Interrogator.Http
 {
 	public static class HttpRequestBuilderExtensions
 	{
-		public static HttpRequestBuilder WithHeader(this HttpRequestBuilder requestBuilder, string name, string value)
-			=> new HttpRequestBuilder(requestBuilder.Client, requestBuilder.Method, requestBuilder.Address, requestBuilder.Headers.Append(new HttpHeader(name, value)));
+		public static HttpRequestBuilder WithHeader(this HttpRequestBuilder requestBuilder, string name, params string[] values)
+			=> new HttpRequestBuilder(requestBuilder.Client, requestBuilder.Method, requestBuilder.Address, requestBuilder.Headers.Append(new HttpHeader(name, values)));
 
 		public static HttpRequestBuilder WithAuthorization(this HttpRequestBuilder requestBuilder, string value)
 			=> requestBuilder.WithHeader("Authorization", value);
 
-		public static HttpRequestBuilder WithAcceptEncoding(this HttpRequestBuilder requestBuilder, string value)
-			=> requestBuilder.WithHeader("Accept-Encoding", value);
+		public static HttpRequestBuilder WithAcceptEncoding(this HttpRequestBuilder requestBuilder, params string[] values)
+			=> requestBuilder.WithHeader("Accept-Encoding", values);
 
-		public static HttpRequestBuilder WithAcceptLanguage(this HttpRequestBuilder requestBuilder, string value)
-			=> requestBuilder.WithHeader("Accept-Language", value);
+		public static HttpRequestBuilder WithAcceptLanguage(this HttpRequestBuilder requestBuilder, params string[] values)
+			=> requestBuilder.WithHeader("Accept-Language", values);
 
 		public static HttpRequestBuilderWithBody WithBody(this HttpRequestBuilder requestBuilder, HttpContent content)
 			=> new HttpRequestBuilderWithBody(requestBuilder.Client, requestBuilder.Method, requestBuilder.Address, requestBuilder.Headers, content);
@@ -30,7 +30,7 @@ namespace Interrogator.Http
 				requestBuilder.Client, 
 				requestBuilder.Method, 
 				requestBuilder.Address, 
-				requestBuilder.Headers.Append(new HttpHeader("content-type", contentType)), 
+				requestBuilder.Headers.Append(new HttpHeader("content-type", new[] { contentType })), 
 				new StringContent(content)
 			);
 

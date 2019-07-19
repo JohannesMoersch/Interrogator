@@ -9,14 +9,10 @@ namespace Interrogator.Http
 {
 	public static class HttpRequestBuilderWithBodyExtensions
 	{
-		public static async Task<HttpResponse> Send(this HttpRequestBuilderWithBody requestBuilder)
-		{
-			var response = await requestBuilder
+		public static Task<HttpResponse> Send(this HttpRequestBuilderWithBody requestBuilder)
+			=> requestBuilder
 				.Client
-				.SendAsync(CreateRequest(requestBuilder));
-
-			return new HttpResponse(response);
-		}
+				.Send(CreateRequest(requestBuilder));
 
 		private static HttpRequestMessage CreateRequest(HttpRequestBuilderWithBody requestBuilder)
 		{

@@ -9,7 +9,7 @@ namespace Interrogator.Http
 	{
 		public HttpClient Client { get; }
 
-		public UntypedHttpRequestBuilder(HttpClient client) 
+		internal UntypedHttpRequestBuilder(HttpClient client) 
 			=> Client = client;
 	}
 }

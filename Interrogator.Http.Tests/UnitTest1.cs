@@ -13,7 +13,9 @@ namespace Interrogator.Http.Tests
 				.Build()
 				.Get("/stuff/12")
 				.WithHeader("Stuff", "Value")
-				.WithJsonBody("Some Json");
+				.WithJsonBody("Some Json")
+				.Send()
+				.IsOK();
 				
 		}
 	}
