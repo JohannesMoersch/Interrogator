@@ -7,7 +7,7 @@ namespace Interrogator.Http
 {
 	public static class HttpClientExtensions
 	{
-		public static UntypedHttpRequestBuilder Build(this HttpClient client)
+		public static UntypedHttpRequestBuilder BuildTest(this HttpClient client)
 			=> new UntypedHttpRequestBuilder(client);
 	}
 }
