@@ -14,87 +14,7 @@ namespace Interrogator.Http
 			var value = await response;
 
 			if ((int)value.StatusCode < 200 || (int)value.StatusCode > 299)
-				throw new HttpAssertionException("Response status code is not a success.");
-
-			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
-		}
-
-		public static async Task<HttpResponseWithExpectedStatusCode> IsOK(this Task<HttpResponse> response)
-		{
-			var value = await response;
-
-			if (value.StatusCode != HttpStatusCode.OK)
-				throw new HttpAssertionException("Response status code is not OK.");
-
-			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
-		}
-
-		public static async Task<HttpResponseWithExpectedStatusCode> IsCreated(this Task<HttpResponse> response)
-		{
-			var value = await response;
-
-			if (value.StatusCode != HttpStatusCode.Created)
-				throw new HttpAssertionException("Response status code is not Created.");
-
-			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
-		}
-
-		public static async Task<HttpResponseWithExpectedStatusCode> IsAccepted(this Task<HttpResponse> response)
-		{
-			var value = await response;
-
-			if (value.StatusCode != HttpStatusCode.Accepted)
-				throw new HttpAssertionException("Response status code is not Accepted.");
-
-			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
-		}
-
-		public static async Task<HttpResponseWithExpectedStatusCode> IsBadRequest(this Task<HttpResponse> response)
-		{
-			var value = await response;
-
-			if (value.StatusCode != HttpStatusCode.BadRequest)
-				throw new HttpAssertionException("Response status code is not BadRequest.");
-
-			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
-		}
-
-		public static async Task<HttpResponseWithExpectedStatusCode> IsUnauthorized(this Task<HttpResponse> response)
-		{
-			var value = await response;
-
-			if (value.StatusCode != HttpStatusCode.Unauthorized)
-				throw new HttpAssertionException("Response status code is not Unauthorized.");
-
-			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
-		}
-
-		public static async Task<HttpResponseWithExpectedStatusCode> IsForbidden(this Task<HttpResponse> response)
-		{
-			var value = await response;
-
-			if (value.StatusCode != HttpStatusCode.Forbidden)
-				throw new HttpAssertionException("Response status code is not Forbidden.");
-
-			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
-		}
-
-		public static async Task<HttpResponseWithExpectedStatusCode> IsNotFound(this Task<HttpResponse> response)
-		{
-			var value = await response;
-
-			if (value.StatusCode != HttpStatusCode.Forbidden)
-				throw new HttpAssertionException("Response status code is not NotFound.");
-
-			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
-		}
-
-		public static async Task<HttpResponseWithExpectedStatusCode> IsConflict(this Task<HttpResponse> response)
-		{
-			var value = await response;
-
-			if (value.StatusCode != HttpStatusCode.Conflict)
-				throw new HttpAssertionException("Response status code is not Conflict.");
+				throw new HttpAssertionException($"Expected response status code to be a success, but response status code was {(int)value.StatusCode} ({value.StatusCode}).");
 
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}
@@ -104,7 +24,7 @@ namespace Interrogator.Http
 			var value = await response;
 
 			if ((int)value.StatusCode < 300 || (int)value.StatusCode > 399)
-				throw new HttpAssertionException("Response status code is not a 3xx.");
+				throw new HttpAssertionException($"Expected response status code to be 3xx, but response status code was {(int)value.StatusCode} ({value.StatusCode}).");
 
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}
@@ -114,7 +34,7 @@ namespace Interrogator.Http
 			var value = await response;
 
 			if ((int)value.StatusCode < 400 || (int)value.StatusCode > 499)
-				throw new HttpAssertionException("Response status code is not a 4xx.");
+				throw new HttpAssertionException($"Expected response status code to be 4xx, but response status code was {(int)value.StatusCode} ({value.StatusCode}).");
 
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}
@@ -124,17 +44,41 @@ namespace Interrogator.Http
 			var value = await response;
 
 			if ((int)value.StatusCode < 500 || (int)value.StatusCode > 599)
-				throw new HttpAssertionException("Response status code is not a 5xx.");
+				throw new HttpAssertionException($"Expected response status code to be 5xx, but response status code was {(int)value.StatusCode} ({value.StatusCode}).");
 
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}
+
+		public static Task<HttpResponseWithExpectedStatusCode> IsOK(this Task<HttpResponse> response)
+			=> response.IsStatusCode(HttpStatusCode.OK);
+
+		public static Task<HttpResponseWithExpectedStatusCode> IsCreated(this Task<HttpResponse> response)
+			=> response.IsStatusCode(HttpStatusCode.Created);
+
+		public static Task<HttpResponseWithExpectedStatusCode> IsAccepted(this Task<HttpResponse> response)
+			=> response.IsStatusCode(HttpStatusCode.Accepted);
+
+		public static Task<HttpResponseWithExpectedStatusCode> IsBadRequest(this Task<HttpResponse> response)
+			=> response.IsStatusCode(HttpStatusCode.BadRequest);
+
+		public static Task<HttpResponseWithExpectedStatusCode> IsUnauthorized(this Task<HttpResponse> response)
+			=> response.IsStatusCode(HttpStatusCode.Unauthorized);
+
+		public static Task<HttpResponseWithExpectedStatusCode> IsForbidden(this Task<HttpResponse> response)
+			=> response.IsStatusCode(HttpStatusCode.Forbidden);
+
+		public static Task<HttpResponseWithExpectedStatusCode> IsNotFound(this Task<HttpResponse> response)
+			=> response.IsStatusCode(HttpStatusCode.NotFound);
+
+		public static Task<HttpResponseWithExpectedStatusCode> IsConflict(this Task<HttpResponse> response)
+			=> response.IsStatusCode(HttpStatusCode.Conflict);
 
 		public static async Task<HttpResponseWithExpectedStatusCode> IsStatusCode(this Task<HttpResponse> response, HttpStatusCode statusCode)
 		{
 			var value = await response;
 
 			if (value.StatusCode != statusCode)
-				throw new HttpAssertionException($"Response status code is not {statusCode}.");
+				throw new HttpAssertionException($"Expected response status code to be {(int)statusCode} ({statusCode}), but response status code was {(int)value.StatusCode} ({value.StatusCode}).");
 
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}

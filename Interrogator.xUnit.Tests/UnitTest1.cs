@@ -37,7 +37,6 @@ namespace Interrogator.xUnit.Tests
 		public async Task<int> Test1([From(nameof(Source))]int source)
 		{
 			await Task.Delay(source);
-			throw new Exception();
 			return 1;
 		}
 

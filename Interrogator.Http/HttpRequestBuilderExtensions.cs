@@ -37,7 +37,7 @@ namespace Interrogator.Http
 		public static HttpRequestBuilderWithBody WithJsonBody(this HttpRequestBuilder requestBuilder, string json)
 			=> requestBuilder.WithStringBody(json, "application/json");
 
-		public static HttpRequestBuilderWithoutBody WithoutBody(this HttpRequestBuilder requestBuilder)
+		public static HttpRequestBuilderWithoutBody WithNoBody(this HttpRequestBuilder requestBuilder)
 			=> new HttpRequestBuilderWithoutBody(requestBuilder.Client, requestBuilder.Method, requestBuilder.Address, requestBuilder.Headers);
 	}
 }
