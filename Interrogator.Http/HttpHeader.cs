@@ -8,12 +8,12 @@ namespace Interrogator.Http
 	{
 		public string Name { get; }
 
-		public IReadOnlyList<string> Value { get; }
+		public IReadOnlyList<string> Values { get; }
 
 		internal HttpHeader(string name, string[] value)
 		{
 			Name = name ?? throw new ArgumentNullException(nameof(name));
-			Value = value ?? throw new ArgumentNullException(nameof(value));
+			Values = value ?? throw new ArgumentNullException(nameof(value));
 		}
 	}
 }

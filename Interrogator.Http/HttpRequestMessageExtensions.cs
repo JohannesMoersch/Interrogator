@@ -13,7 +13,7 @@ namespace Interrogator.Http
 		public static void AddHeaders(this HttpRequestMessage request, IEnumerable<HttpHeader> headers)
 		{
 			foreach (var header in headers.GroupBy(h => h.Name))
-				request.AddHeader(header.Key, header.SelectMany(h => h.Value));
+				request.AddHeader(header.Key, header.SelectMany(h => h.Values));
 		}
 
 		public static void AddHeader(this HttpRequestMessage message, string name, IEnumerable<string> values)
@@ -62,6 +62,7 @@ namespace Interrogator.Http
 		private static IEnumerable<HttpHeader> GetHttpHeaders(HttpResponseMessage response)
 			=> response
 				.Headers
+				.Concat(response.Content.Headers)
 				.Select(header => new HttpHeader(header.Key, header.Value.ToArray()));
 	}
 }

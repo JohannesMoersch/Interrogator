@@ -49,7 +49,7 @@ namespace Interrogator.Http
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}
 
-		public static Task<HttpResponseWithExpectedStatusCode> IsOK(this Task<HttpResponse> response)
+		public static Task<HttpResponseWithExpectedStatusCode> IsOk(this Task<HttpResponse> response)
 			=> response.IsStatusCode(HttpStatusCode.OK);
 
 		public static Task<HttpResponseWithExpectedStatusCode> IsCreated(this Task<HttpResponse> response)

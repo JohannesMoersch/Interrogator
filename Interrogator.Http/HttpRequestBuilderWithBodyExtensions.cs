@@ -18,9 +18,9 @@ namespace Interrogator.Http
 		{
 			var request = new HttpRequestMessage(requestBuilder.Method, requestBuilder.Address);
 
-			request.AddHeaders(requestBuilder.Headers);
+			request.Content = requestBuilder.Content;
 
-			request.Content = request.Content;
+			request.AddHeaders(requestBuilder.Headers);
 
 			return request;
 		}
