@@ -15,7 +15,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/OK")
-				.WithNoBody()
 				.Send()
 				.IsOk();
 
@@ -24,7 +23,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/Created")
-				.WithNoBody()
 				.Send()
 				.IsCreated();
 
@@ -33,7 +31,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/Accepted")
-				.WithNoBody()
 				.Send()
 				.IsAccepted();
 
@@ -42,7 +39,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/BadRequest")
-				.WithNoBody()
 				.Send()
 				.IsBadRequest();
 
@@ -51,7 +47,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/Unauthorized")
-				.WithNoBody()
 				.Send()
 				.IsUnauthorized();
 
@@ -60,7 +55,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/Forbidden")
-				.WithNoBody()
 				.Send()
 				.IsForbidden();
 
@@ -69,7 +63,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/NotFound")
-				.WithNoBody()
 				.Send()
 				.IsNotFound();
 
@@ -78,7 +71,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/Conflict")
-				.WithNoBody()
 				.Send()
 				.IsConflict();
 
@@ -87,7 +79,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/Success")
-				.WithNoBody()
 				.Send()
 				.IsSuccess();
 
@@ -96,7 +87,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/3xx")
-				.WithNoBody()
 				.Send()
 				.Is3xx();
 
@@ -105,7 +95,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/4xx")
-				.WithNoBody()
 				.Send()
 				.Is4xx();
 
@@ -114,7 +103,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/5xx")
-				.WithNoBody()
 				.Send()
 				.Is5xx();
 
@@ -123,7 +111,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/Body")
-				.WithNoBody()
 				.Send()
 				.IsOk()
 				.AssertJsonBody(json => json.Should().Be(Constants.TestBodyJson));
@@ -133,7 +120,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/NoBody")
-				.WithNoBody()
 				.Send()
 				.IsOk()
 				.DoesNotHaveBody();
@@ -143,7 +129,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/Header")
-				.WithNoBody()
 				.Send()
 				.IsOk()
 				.HasHeaderValues(Constants.TestHeaderName, Constants.TestHeaderValue);
@@ -153,7 +138,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/MultiHeader")
-				.WithNoBody()
 				.Send()
 				.IsOk()
 				.HasHeaderValues(Constants.TestHeaderName, Constants.TestMultiHeaderValues);
@@ -163,7 +147,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Response/NoHeader")
-				.WithNoBody()
 				.Send()
 				.IsOk()
 				.DoesNotHaveHeader(Constants.TestHeaderName);

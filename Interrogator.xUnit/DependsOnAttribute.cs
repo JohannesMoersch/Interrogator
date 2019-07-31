@@ -7,7 +7,7 @@ using Interrogator.xUnit.Utilities;
 
 namespace Interrogator.xUnit
 {
-	[AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method, AllowMultiple = false)]
+	[AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method, AllowMultiple = true)]
 	public class DependsOnAttribute : Attribute
 	{
 		private readonly Type _type;

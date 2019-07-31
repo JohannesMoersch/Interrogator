@@ -10,20 +10,10 @@ namespace Interrogator.Http.Tests
 	public class WebApiRequestTests
 	{
 		[IntegrationTest]
-		public Task GetWithBody([RestClient]HttpClient httpClient)
-			=> httpClient
-				.BuildTest()
-				.Get("Request/GetWithBody")
-				.WithJsonBody(Constants.TestBodyJson)
-				.Send()
-				.IsOk();
-
-		[IntegrationTest]
 		public Task GetWithNoBody([RestClient]HttpClient httpClient)
 			=> httpClient
 				.BuildTest()
 				.Get("Request/GetWithNoBody")
-				.WithNoBody()
 				.Send()
 				.IsOk();
 
@@ -33,7 +23,6 @@ namespace Interrogator.Http.Tests
 				.BuildTest()
 				.Get("Request/GetWithHeader")
 				.WithHeader(Constants.TestHeaderName, Constants.TestHeaderValue)
-				.WithNoBody()
 				.Send()
 				.IsOk();
 
@@ -43,7 +32,6 @@ namespace Interrogator.Http.Tests
 				.BuildTest()
 				.Get("Request/GetWithMultiHeader")
 				.WithHeader(Constants.TestHeaderName, Constants.TestMultiHeaderValues)
-				.WithNoBody()
 				.Send()
 				.IsOk();
 
@@ -52,7 +40,6 @@ namespace Interrogator.Http.Tests
 			=> httpClient
 				.BuildTest()
 				.Get("Request/GetWithNoHeader")
-				.WithNoBody()
 				.Send()
 				.IsOk();
 

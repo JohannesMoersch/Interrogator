@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Interrogator.Http
 {
-	public class HttpRequestBuilderWithoutBody
+	public class HttpRequestBuilderWithoutBodySupport
 	{
 		public HttpClient Client { get; }
 
@@ -16,7 +16,7 @@ namespace Interrogator.Http
 
 		public IReadOnlyList<HttpHeader> Headers { get; }
 
-		internal HttpRequestBuilderWithoutBody(HttpClient client, HttpMethod method, string address, IEnumerable<HttpHeader> headers)
+		internal HttpRequestBuilderWithoutBodySupport(HttpClient client, HttpMethod method, string address, IEnumerable<HttpHeader> headers)
 		{
 			Client = client;
 			Method = method;

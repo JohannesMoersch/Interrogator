@@ -11,13 +11,6 @@ namespace Interrogator.Http.TestApi.Controllers
 	[ApiController]
 	public class RequestController : ControllerBase
 	{
-		[HttpGet("Request/GetWithBody")]
-		public ActionResult<string> GetWithBody([FromBody]string[] body)
-			=> body
-				.Should()
-				.BeEquivalentTo(Constants.TestBody)
-				.ThenOk();
-
 		[HttpGet("Request/GetWithNoBody")]
 		public ActionResult<string> GetWithNoBody()
 			=> HttpContext
