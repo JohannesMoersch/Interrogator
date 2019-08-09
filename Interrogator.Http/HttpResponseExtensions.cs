@@ -78,7 +78,7 @@ namespace Interrogator.Http
 			var value = await response;
 
 			if (value.StatusCode != statusCode)
-				throw new HttpAssertionException($"Expected response status code to be {(int)statusCode} ({statusCode}), but response status code was {(int)value.StatusCode} ({value.StatusCode}).");
+				throw new HttpAssertionException($"Expected response status code to be {(int)statusCode} ({statusCode}), but response status code was {(int)value.StatusCode} ({value.StatusCode}).\n\nResponse body: {await value.Content.ReadAsStringAsync()}");
 
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}
