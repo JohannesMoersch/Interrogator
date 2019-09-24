@@ -13,7 +13,7 @@ namespace Interrogator.Http
 			=> response
 				.AssertHeader
 				(
-					name, 
+					name,
 					headerOrNull =>
 					{
 						if (!headerOrNull.HasValue)
@@ -82,7 +82,7 @@ namespace Interrogator.Http
 				.AssertBody(async content =>
 				{
 					if ((await content.ReadAsByteArrayAsync()).Length > 0)
-						throw new HttpAssertionException($"Response contains a body.");
+						throw await new HttpAssertionException($"Response contains a body.").AddResponseBody(content);
 				});
 
 		public static Task<HttpResponseWithValidatedBody<HttpContent>> AssertBody(this Task<HttpResponseWithExpectedStatusCode> response, Func<HttpContent, Task> assertOnBody)
