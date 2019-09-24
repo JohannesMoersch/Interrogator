@@ -113,7 +113,10 @@ namespace Interrogator.Http.Tests
 				.Get("Response/Body")
 				.Send()
 				.IsOk()
-				.AssertJsonBody(json => json.Should().Be(Constants.TestBodyJson));
+				.AssertJsonBody(json => json.Should().Be(Constants.TestBodyJson))
+				.ReturnFromBody(_ => _)
+				.Should()
+				.Be(Constants.TestBodyJson);
 
 		[IntegrationTest]
 		public Task ReturnsNoBody([RestClient]HttpClient httpClient)

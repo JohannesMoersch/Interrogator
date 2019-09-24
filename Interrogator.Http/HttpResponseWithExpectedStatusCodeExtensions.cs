@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace Interrogator.Http
 {
@@ -69,7 +70,7 @@ namespace Interrogator.Http
 			return value;
 		}
 
-		public static Task HasBody(this Task<HttpResponseWithExpectedStatusCode> response)
+		public static Task<HttpResponseWithValidatedBody<HttpContent>> HasBody(this Task<HttpResponseWithExpectedStatusCode> response)
 			=> response
 				.AssertBody(async content => 
 				{
@@ -85,23 +86,34 @@ namespace Interrogator.Http
 						throw new HttpAssertionException($"Response contains a body.");
 				});
 
-		public static async Task AssertBody(this Task<HttpResponseWithExpectedStatusCode> response, Func<HttpContent, Task> assertOnBody)
+		public static async Task<HttpResponseWithValidatedBody<HttpContent>> AssertBody(this Task<HttpResponseWithExpectedStatusCode> response, Func<HttpContent, Task> assertOnBody)
 		{
 			var value = await response;
 
 			await assertOnBody.Invoke(value.Content);
+
+			return new HttpResponseWithValidatedBody<HttpContent>(value.Content);
 		}
 
-		public static Task AssertStringBody(this Task<HttpResponseWithExpectedStatusCode> response, Action<string> assertOnBody)
-			=> response.AssertBody(async httpContent => assertOnBody.Invoke(await httpContent.ReadAsStringAsync()));
+		public static Task<HttpResponseWithValidatedBody<string>> AssertStringBody(this Task<HttpResponseWithExpectedStatusCode> response, Action<string> assertOnBody)
+			=> response.AssertBody(httpContent => httpContent.ReadAsStringAsync(), assertOnBody);
 
-		public static Task AssertJsonBody(this Task<HttpResponseWithExpectedStatusCode> response, Action<string> assertOnBody)
+		public static Task<HttpResponseWithValidatedBody<string>> AssertJsonBody(this Task<HttpResponseWithExpectedStatusCode> response, Action<string> assertOnBody)
 			=> response
 				.AssertHeader("Content-Type", headerOrNull =>
 				{
 					if (!(headerOrNull is HttpHeader header) || header.Values.All(value => !value.StartsWith("application/json", StringComparison.InvariantCultureIgnoreCase)))
 						throw new HttpAssertionException("Body does not have a content type of \"application/json\".");
 				})
-				.AssertBody(async httpContent => assertOnBody.Invoke(await httpContent.ReadAsStringAsync()));
+				.AssertStringBody(assertOnBody);
+
+		private static async Task<HttpResponseWithValidatedBody<T>> AssertBody<T>(this Task<HttpResponseWithExpectedStatusCode> response, Func<HttpContent, Task<T>> bodyExtractor, Action<T> assertOnBody)
+		{
+			var body = await bodyExtractor.Invoke((await response).Content);
+
+			assertOnBody.Invoke(body);
+
+			return new HttpResponseWithValidatedBody<T>(body);
+		}
 	}
 }
