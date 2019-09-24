@@ -14,7 +14,7 @@ namespace Interrogator.Http
 			var value = await response;
 
 			if ((int)value.StatusCode < 200 || (int)value.StatusCode > 299)
-				throw new HttpAssertionException($"Expected response status code to be a success, but response status code was {(int)value.StatusCode} ({value.StatusCode}).");
+				throw new HttpAssertionException($"Expected response status code to be a success, but response status code was {(int)value.StatusCode} ({value.StatusCode}).\n\nResponse body:\n{await value.Content.ReadAsStringAsync()}");
 
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}
@@ -24,7 +24,7 @@ namespace Interrogator.Http
 			var value = await response;
 
 			if ((int)value.StatusCode < 300 || (int)value.StatusCode > 399)
-				throw new HttpAssertionException($"Expected response status code to be 3xx, but response status code was {(int)value.StatusCode} ({value.StatusCode}).");
+				throw new HttpAssertionException($"Expected response status code to be 3xx, but response status code was {(int)value.StatusCode} ({value.StatusCode}).\n\nResponse body:\n{await value.Content.ReadAsStringAsync()}");
 
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}
@@ -34,7 +34,7 @@ namespace Interrogator.Http
 			var value = await response;
 
 			if ((int)value.StatusCode < 400 || (int)value.StatusCode > 499)
-				throw new HttpAssertionException($"Expected response status code to be 4xx, but response status code was {(int)value.StatusCode} ({value.StatusCode}).");
+				throw new HttpAssertionException($"Expected response status code to be 4xx, but response status code was {(int)value.StatusCode} ({value.StatusCode}).\n\nResponse body:\n{await value.Content.ReadAsStringAsync()}");
 
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}
@@ -44,7 +44,7 @@ namespace Interrogator.Http
 			var value = await response;
 
 			if ((int)value.StatusCode < 500 || (int)value.StatusCode > 599)
-				throw new HttpAssertionException($"Expected response status code to be 5xx, but response status code was {(int)value.StatusCode} ({value.StatusCode}).");
+				throw new HttpAssertionException($"Expected response status code to be 5xx, but response status code was {(int)value.StatusCode} ({value.StatusCode}).\n\nResponse body:\n{await value.Content.ReadAsStringAsync()}");
 
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}
@@ -78,7 +78,7 @@ namespace Interrogator.Http
 			var value = await response;
 
 			if (value.StatusCode != statusCode)
-				throw new HttpAssertionException($"Expected response status code to be {(int)statusCode} ({statusCode}), but response status code was {(int)value.StatusCode} ({value.StatusCode}).\n\nResponse body: {await value.Content.ReadAsStringAsync()}");
+				throw new HttpAssertionException($"Expected response status code to be {(int)statusCode} ({statusCode}), but response status code was {(int)value.StatusCode} ({value.StatusCode}).\n\nResponse body:\n{await value.Content.ReadAsStringAsync()}");
 
 			return new HttpResponseWithExpectedStatusCode(value.Headers, value.Content, value.RequestDuration);
 		}
