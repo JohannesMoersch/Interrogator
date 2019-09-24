@@ -86,17 +86,11 @@ namespace Interrogator.Http
 						throw new HttpAssertionException($"Response contains a body.");
 				});
 
-		public static async Task<HttpResponseWithValidatedBody<HttpContent>> AssertBody(this Task<HttpResponseWithExpectedStatusCode> response, Func<HttpContent, Task> assertOnBody)
-		{
-			var value = await response;
-
-			await assertOnBody.Invoke(value.Content);
-
-			return new HttpResponseWithValidatedBody<HttpContent>(value.Content);
-		}
+		public static Task<HttpResponseWithValidatedBody<HttpContent>> AssertBody(this Task<HttpResponseWithExpectedStatusCode> response, Func<HttpContent, Task> assertOnBody)
+			=> response.AssertBody(Task.FromResult, assertOnBody);
 
 		public static Task<HttpResponseWithValidatedBody<string>> AssertStringBody(this Task<HttpResponseWithExpectedStatusCode> response, Action<string> assertOnBody)
-			=> response.AssertBody(httpContent => httpContent.ReadAsStringAsync(), assertOnBody);
+			=> response.AssertBody(httpContent => httpContent.ReadAsStringAsync(), str => { assertOnBody.Invoke(str); return Task.CompletedTask; });
 
 		public static Task<HttpResponseWithValidatedBody<string>> AssertJsonBody(this Task<HttpResponseWithExpectedStatusCode> response, Action<string> assertOnBody)
 			=> response
@@ -107,11 +101,11 @@ namespace Interrogator.Http
 				})
 				.AssertStringBody(assertOnBody);
 
-		private static async Task<HttpResponseWithValidatedBody<T>> AssertBody<T>(this Task<HttpResponseWithExpectedStatusCode> response, Func<HttpContent, Task<T>> bodyExtractor, Action<T> assertOnBody)
+		private static async Task<HttpResponseWithValidatedBody<T>> AssertBody<T>(this Task<HttpResponseWithExpectedStatusCode> response, Func<HttpContent, Task<T>> bodyExtractor, Func<T, Task> assertOnBody)
 		{
 			var body = await bodyExtractor.Invoke((await response).Content);
 
-			assertOnBody.Invoke(body);
+			await assertOnBody.Invoke(body);
 
 			return new HttpResponseWithValidatedBody<T>(body);
 		}
