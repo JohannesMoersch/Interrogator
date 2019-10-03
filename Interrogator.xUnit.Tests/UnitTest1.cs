@@ -1,28 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
 
 namespace Interrogator.xUnit.Tests
 {
-	public class Stuff
-	{
-		public async Task<string> Message()
-		{
-			await Task.Delay(500);
-
-			return "abc123";
-		}
-	}
-
-	public class SkipTestAttribute : IntegrationTestAttribute
-	{
-		public SkipTestAttribute()
-		{
-			Skip = "Skip This Test";
-		}
-	}
-
 	public class UnitTest1
 	{
 		private readonly string _message;
@@ -78,119 +59,6 @@ namespace Interrogator.xUnit.Tests
 		[IntegrationTest]
 		public static void DependsOnVoid([From(nameof(TestVoid))]int input)
 		{
-		}
-	}
-
-	public class TestParallelism
-	{
-		[IntegrationTest]
-		public bool SyncSource()
-		{
-			Thread.Sleep(2000);
-
-			return true;
-		}
-
-		[IntegrationTest]
-		public async Task<bool> AsyncSource()
-		{
-			await Task.Delay(2000);
-
-			return true;
-		}
-
-		[IntegrationTest]
-		public void SyncTest1([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Thread.Sleep(2000);
-
-		[IntegrationTest]
-		public void SyncTest2([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Thread.Sleep(2000);
-
-		[IntegrationTest]
-		public void SyncTest3([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Thread.Sleep(2000);
-
-		[IntegrationTest]
-		public void SyncTest4([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Thread.Sleep(2000);
-
-		[IntegrationTest]
-		public void SyncTest5([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Thread.Sleep(2000);
-
-		[IntegrationTest]
-		public void SyncTest6([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Thread.Sleep(2000);
-
-		[IntegrationTest]
-		public void SyncTest7([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Thread.Sleep(2000);
-
-		[IntegrationTest]
-		public void SyncTest8([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Thread.Sleep(2000);
-
-		[IntegrationTest]
-		public Task AsyncTest1([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Task.Delay(2000);
-
-		[IntegrationTest]
-		public Task AsyncTest2([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Task.Delay(2000);
-
-		[IntegrationTest]
-		public Task AsyncTest3([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Task.Delay(2000);
-
-		[IntegrationTest]
-		public Task AsyncTest4([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Task.Delay(2000);
-
-		[IntegrationTest]
-		public Task AsyncTest5([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Task.Delay(2000);
-
-		[IntegrationTest]
-		public Task AsyncTest6([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Task.Delay(2000);
-
-		[IntegrationTest]
-		public Task AsyncTest7([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Task.Delay(2000);
-
-		[IntegrationTest]
-		public Task AsyncTest8([From(nameof(SyncSource))]bool sync, [From(nameof(AsyncSource))]bool async)
-			=> Task.Delay(2000);
-	}
-
-	public class TestNotConcurrent
-	{
-		private static string _results = "";
-
-		[IntegrationTest]
-		[NotConcurrent("Group1")]
-		public Task Group1_Method1()
-		{
-			_results += nameof(Group1_Method1);
-			return Task.Delay(2000);
-		}
-
-		[IntegrationTest]
-		[NotConcurrent("Group1")]
-		public Task Group1_Method2()
-		{
-			_results += nameof(Group1_Method2);
-			return Task.Delay(2000);
-		}
-
-		[DependsOn(nameof(Group1_Method1))]
-		[DependsOn(nameof(Group1_Method2))]
-		public Task ConfirmResultCorrect()
-		{
-			Assert.Contains(nameof(Group1_Method2), _results);
-			Assert.Contains(nameof(Group1_Method2), _results);
-			return Task.CompletedTask;
 		}
 	}
 }
