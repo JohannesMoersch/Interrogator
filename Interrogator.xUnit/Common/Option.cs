@@ -28,6 +28,8 @@ namespace Interrogator.xUnit.Common
 			return _hasValue ? some.Invoke(_value) : none.Invoke();
 		}
 
+		public bool HasValue => _hasValue;
+
 		public bool Equals(Option<TValue> other)
 			=> _hasValue == other._hasValue && (!_hasValue || Equals(_value, other._value));
 
