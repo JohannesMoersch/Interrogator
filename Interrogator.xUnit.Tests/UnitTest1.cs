@@ -47,7 +47,7 @@ namespace Interrogator.xUnit.Tests
 			=> Task.CompletedTask;
 
 		[IntegrationTest]
-		public static void DependsOnTask([From(nameof(TestTask))]int input)
+		public static void DependsOnTask_ShouldFail([From(nameof(TestTask))]int input)
 		{
 		}
 
@@ -57,7 +57,7 @@ namespace Interrogator.xUnit.Tests
 		}
 
 		[IntegrationTest]
-		public static void DependsOnVoid([From(nameof(TestVoid))]int input)
+		public static void DependsOnVoid_ShouldFail([From(nameof(TestVoid))]int input)
 		{
 		}
 	}
