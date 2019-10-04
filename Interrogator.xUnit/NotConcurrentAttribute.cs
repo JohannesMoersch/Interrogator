@@ -94,7 +94,7 @@ namespace Interrogator.xUnit
 			=> type
 				.GetMethods()
 				.Where(m => m.GetCustomAttributes(true).OfType<NotConcurrentAttribute>().Any(x => x.GroupName == groupName))
-				.OrderBy(m => m.Name);
+				.OrderBy(m => $"{m.Name}-{String.Join("-", m.GetParameters().Select(p => p.ParameterType.FullName))}");
 
 		private static IEnumerable<Type> GetTypesInClassHierarchy(Type type)
 		{
