@@ -102,7 +102,7 @@ namespace Interrogator.xUnit.Execution
 		private static Result<(MethodInfo method, bool continueOnDependencyFailure)[], string> GetDependencies(Type classType, MemberInfo member)
 			=> member
 				.GetCustomAttributes<DependsOnAttribute>()
-				.Select(att => att.TryGetMethod(classType).Select(method => (method, att.ContinueOnDependencyFailure)))
+				.Select(att => att.TryGetMethod(classType, member).Select(method => (method, att.ContinueOnDependencyFailure)))
 				.TakeUntilFailure()
 				.Select(option => option.Where(tuple => tuple.method.Match(_ => true, () => false)).Select(tuple => (tuple.method.Match(_ => _, () => default), tuple.ContinueOnDependencyFailure)).ToArray());
 	}

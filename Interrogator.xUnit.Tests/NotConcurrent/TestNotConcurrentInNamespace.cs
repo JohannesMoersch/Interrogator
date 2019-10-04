@@ -10,7 +10,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent
 			private static string _results = "";
 
 			[IntegrationTest]
-			[NotConcurrent(nameof(Group1_Method1), "Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
+			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
 			public Task Group1_Method1()
 			{
 				_results += nameof(Group1_Method1);
@@ -18,7 +18,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent
 			}
 
 			[IntegrationTest]
-			[NotConcurrent(nameof(Group1_Method2), "Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
+			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
 			public Task Group1_Method2()
 			{
 				_results += nameof(Group1_Method2);
@@ -40,7 +40,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent
 			private static string _results = "";
 
 			[IntegrationTest]
-			[NotConcurrent(nameof(Group1_Method3), "Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
+			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
 			public Task Group1_Method3()
 			{
 				_results += nameof(Group1_Method3);
@@ -48,7 +48,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent
 			}
 
 			[IntegrationTest]
-			[NotConcurrent(nameof(Group1_Method4), "Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
+			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
 			public Task Group1_Method4()
 			{
 				_results += nameof(Group1_Method4);

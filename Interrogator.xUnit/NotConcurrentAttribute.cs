@@ -11,6 +11,8 @@ namespace Interrogator.xUnit
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 	public class NotConcurrentAttribute : DependsOnAttribute
 	{
+		private static readonly Dictionary<Type, MethodInfo[]> _methodInfoDictionary = new Dictionary<Type, MethodInfo[]>();
+
 		public enum ConcurrencyScope
 		{
 			Class,
@@ -21,24 +23,22 @@ namespace Interrogator.xUnit
 
 		public string GroupName { get; }
 		public ConcurrencyScope Scope { get; }
-		public string AttachedMethodName { get; }
 
-		public NotConcurrentAttribute(string currentMethodName) : this(currentMethodName, "", ConcurrencyScope.Class) { }
-		public NotConcurrentAttribute(string currentMethodName, string groupName) : this(currentMethodName, groupName, ConcurrencyScope.Class) { }
+		public NotConcurrentAttribute() : this("", ConcurrencyScope.Class) { }
+		public NotConcurrentAttribute(string groupName) : this(groupName, ConcurrencyScope.Class) { }
 
-		public NotConcurrentAttribute(string currentMethodName, ConcurrencyScope scope) : this(currentMethodName, "", scope) { }
+		public NotConcurrentAttribute(ConcurrencyScope scope) : this("", scope) { }
 
-		public NotConcurrentAttribute(string attachedMethodName, string groupName, ConcurrencyScope scope) : base(null)
+		public NotConcurrentAttribute(string groupName, ConcurrencyScope scope) : base(null)
 		{
 			GroupName = $"{groupName}_{scope}"; // Adding scope to group name ensures that different scoped attributes don't collide
 			Scope = scope;
-			AttachedMethodName = attachedMethodName;
 		}
 
-		internal override Result<Option<MethodInfo>, string> TryGetMethod(Type containingType)
+		internal override Result<Option<MethodInfo>, string> TryGetMethod(Type containingType, MemberInfo member)
 		{
 			var result = (Type ?? containingType)
-				.TryGetMethod(AttachedMethodName, ParameterTypes)
+				.TryGetMethod(member.Name, ParameterTypes)
 				.Select(currentMethod => GetPreviousInChain(currentMethod, containingType, Scope, GroupName));
 			return result;
 		}
@@ -51,20 +51,29 @@ namespace Interrogator.xUnit
 
 		private static MethodInfo[] GetSameGroupMethods(ConcurrencyScope scope, Type type, string groupName)
 		{
-			switch (scope)
+			if (!_methodInfoDictionary.ContainsKey(type))
 			{
-
-				case ConcurrencyScope.Class:
-					return GetGroupMethodsInClass(type, groupName).ToArray();
-				case ConcurrencyScope.Assembly:
-					return GetGroupMethodsInAssembly(type, groupName).ToArray();
-				case ConcurrencyScope.Namespace:
-					return GetGroupMethodsInNamespace(type, groupName).ToArray();
-				case ConcurrencyScope.ClassHierarchy:
-					return GetGroupMethodsInClassHierarchy(type, groupName).ToArray();
+				switch (scope)
+				{
+					case ConcurrencyScope.Class:
+						_methodInfoDictionary[type] = GetGroupMethodsInClass(type, groupName).ToArray();
+						break;
+					case ConcurrencyScope.Assembly:
+						_methodInfoDictionary[type] = GetGroupMethodsInAssembly(type, groupName).ToArray();
+						break;
+					case ConcurrencyScope.Namespace:
+						_methodInfoDictionary[type] = GetGroupMethodsInNamespace(type, groupName).ToArray();
+						break;
+					case ConcurrencyScope.ClassHierarchy:
+						_methodInfoDictionary[type] = GetGroupMethodsInClassHierarchy(type, groupName).ToArray();
+						break;
+					default:
+						_methodInfoDictionary[type] = Array.Empty<MethodInfo>();
+						break;
+				}
 			}
 
-			return Array.Empty<MethodInfo>();
+			return _methodInfoDictionary[type];
 		}
 
 		private static IEnumerable<MethodInfo> GetGroupMethodsInClassHierarchy(Type type, string groupName)
