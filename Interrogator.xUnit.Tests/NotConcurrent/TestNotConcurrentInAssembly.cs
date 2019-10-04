@@ -8,7 +8,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent
 		private static string _results = "";
 
 		[IntegrationTest]
-		[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
+		[NotConcurrent(nameof(Group1_Method1), "Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
 		public Task Group1_Method1()
 		{
 			_results += nameof(Group1_Method1);
@@ -16,7 +16,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent
 		}
 
 		[IntegrationTest]
-		[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
+		[NotConcurrent(nameof(Group1_Method2), "Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
 		public Task Group1_Method2()
 		{
 			_results += nameof(Group1_Method2);

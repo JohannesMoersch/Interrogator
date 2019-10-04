@@ -21,24 +21,24 @@ namespace Interrogator.xUnit
 
 		public string GroupName { get; }
 		public ConcurrencyScope Scope { get; }
-		public string CurrentMethodName { get; }
+		public string AttachedMethodName { get; }
 
-		public NotConcurrentAttribute([CallerMemberName]string currentMethodName = null) : this("", ConcurrencyScope.Class, currentMethodName) { }
-		public NotConcurrentAttribute(string groupName, [CallerMemberName]string currentMethodName = null) : this(groupName, ConcurrencyScope.Class, currentMethodName) { }
+		public NotConcurrentAttribute(string currentMethodName) : this(currentMethodName, "", ConcurrencyScope.Class) { }
+		public NotConcurrentAttribute(string currentMethodName, string groupName) : this(currentMethodName, groupName, ConcurrencyScope.Class) { }
 
-		public NotConcurrentAttribute(ConcurrencyScope scope, [CallerMemberName]string currentMethodName = null) : this("", scope, currentMethodName) { }
+		public NotConcurrentAttribute(string currentMethodName, ConcurrencyScope scope) : this(currentMethodName, "", scope) { }
 
-		public NotConcurrentAttribute(string groupName, ConcurrencyScope scope, [CallerMemberName]string currentMethodName = null) : base(null)
+		public NotConcurrentAttribute(string attachedMethodName, string groupName, ConcurrencyScope scope) : base(null)
 		{
 			GroupName = $"{groupName}_{scope}"; // Adding scope to group name ensures that different scoped attributes don't collide
 			Scope = scope;
-			CurrentMethodName = currentMethodName;
+			AttachedMethodName = attachedMethodName;
 		}
 
 		internal override Result<Option<MethodInfo>, string> TryGetMethod(Type containingType)
 		{
 			var result = (Type ?? containingType)
-				.TryGetMethod(CurrentMethodName, ParameterTypes)
+				.TryGetMethod(AttachedMethodName, ParameterTypes)
 				.Select(currentMethod => GetPreviousInChain(currentMethod, containingType, Scope, GroupName));
 			return result;
 		}
