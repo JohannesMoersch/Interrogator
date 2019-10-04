@@ -8,6 +8,12 @@ using Interrogator.xUnit.Utilities;
 
 namespace Interrogator.xUnit
 {
+	internal static class TypeExtensions
+	{
+		public static IOrderedEnumerable<Type> OrderTypes(this IEnumerable<Type> types)
+			=> types.OrderBy(type => type.FullName);
+	}
+
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 	public class NotConcurrentAttribute : DependsOnAttribute
 	{
@@ -53,37 +59,42 @@ namespace Interrogator.xUnit
 		{
 			if (!_methodInfoDictionary.ContainsKey(type))
 			{
+				IEnumerable<Type> types;
 				switch (scope)
 				{
 					case ConcurrencyScope.Class:
-						_methodInfoDictionary[type] = GetGroupMethodsInClass(type, groupName).ToArray();
+						types = new[] { type };
 						break;
 					case ConcurrencyScope.Assembly:
-						_methodInfoDictionary[type] = GetGroupMethodsInAssembly(type, groupName).ToArray();
+						types = GetTypesInAssembly(type);
 						break;
 					case ConcurrencyScope.Namespace:
-						_methodInfoDictionary[type] = GetGroupMethodsInNamespace(type, groupName).ToArray();
+						types = GetTypesInNamespace(type);
 						break;
 					case ConcurrencyScope.ClassHierarchy:
-						_methodInfoDictionary[type] = GetGroupMethodsInClassHierarchy(type, groupName).ToArray();
+						types = GetTypesInClassHierarchy(type);
 						break;
 					default:
-						_methodInfoDictionary[type] = Array.Empty<MethodInfo>();
+						types = Array.Empty<Type>();
 						break;
 				}
+				_methodInfoDictionary[type] = GetMethodsInTypes(groupName, types.ToArray());
 			}
 
 			return _methodInfoDictionary[type];
 		}
 
-		private static IEnumerable<MethodInfo> GetGroupMethodsInClassHierarchy(Type type, string groupName)
-		{
-			foreach (var t in GetTypesInClassHierarchy(type))
-			{
-				foreach (var method in GetGroupMethodsInClass(t, groupName))
-					yield return method;
-			}
-		}
+		private static MethodInfo[] GetMethodsInTypes(string groupName, params Type[] types)
+			=> types
+				.OrderTypes()
+				.SelectMany(t => GetGroupMethodsInType(t, groupName))
+				.ToArray();
+
+		private static IEnumerable<MethodInfo> GetGroupMethodsInType(Type type, string groupName)
+			=> type
+				.GetMethods()
+				.Where(m => m.GetCustomAttributes(true).OfType<NotConcurrentAttribute>().Any(x => x.GroupName == groupName))
+				.OrderBy(m => m.Name);
 
 		private static IEnumerable<Type> GetTypesInClassHierarchy(Type type)
 		{
@@ -92,29 +103,23 @@ namespace Interrogator.xUnit
 			{
 				yield return nextParent;
 				nextParent = nextParent.DeclaringType;
-			};
+			}
+
+			foreach (var t in type.GetNestedTypes())
+				yield return t;
 		}
 
-		private static IEnumerable<MethodInfo> GetGroupMethodsInNamespace(Type type, string groupName)
+		private static IEnumerable<Type> GetTypesInNamespace(Type type)
 			=> AppDomain
 				.CurrentDomain
 				.GetAssemblies()
 				.SelectMany(assembly => assembly.GetTypes())
-				.Where(t => t.Namespace == type.Namespace)
-				.SelectMany(t => GetGroupMethodsInClass(t, groupName));
+				.Where(t => t.Namespace == type.Namespace);
 
-		private static IEnumerable<MethodInfo> GetGroupMethodsInAssembly(Type type, string groupName)
+		private static IEnumerable<Type> GetTypesInAssembly(Type type)
 			=> type
 				.Assembly
-				.GetTypes()
-				.OrderBy(t => t.FullName)
-				.SelectMany(t => GetGroupMethodsInClass(t, groupName));
-
-		private static IEnumerable<MethodInfo> GetGroupMethodsInClass(Type type, string groupName)
-			=> type
-				.GetMethods()
-				.Where(m => m.GetCustomAttributes(true).OfType<NotConcurrentAttribute>().Any(x => x.GroupName == groupName))
-				.OrderBy(m => m.Name);
+				.GetTypes();
 
 		private static Option<MethodInfo> GetPreviousMethod(MethodBase currentMethod, MethodInfo[] sameGroupMethods)
 		{
