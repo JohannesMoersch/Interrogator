@@ -28,8 +28,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent
 		[DependsOn(nameof(Group1_Method2))]
 		public Task ConfirmResultCorrect()
 		{
-			Assert.Contains(nameof(Group1_Method1), _results);
-			Assert.Contains(nameof(Group1_Method2), _results);
+			Assert.Equal(nameof(Group1_Method1) + nameof(Group1_Method2), _results);
 			return Task.CompletedTask;
 		}
 	}
@@ -62,8 +61,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent2
 		[DependsOn(nameof(Group1_Method4))]
 		public Task ConfirmResultCorrect()
 		{
-			Assert.Contains(nameof(Group1_Method3), _results);
-			Assert.Contains(nameof(Group1_Method4), _results);
+			Assert.Equal(nameof(Group1_Method3) + nameof(Group1_Method4), _results);
 			return Task.CompletedTask;
 		}
 	}

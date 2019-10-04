@@ -14,6 +14,7 @@ namespace Interrogator.xUnit
 		public enum ConcurrencyScope
 		{
 			Class,
+			ClassHierarchy,
 			Namespace,
 			Assembly
 		}
@@ -59,9 +60,33 @@ namespace Interrogator.xUnit
 					return GetGroupMethodsInAssembly(type, groupName).ToArray();
 				case ConcurrencyScope.Namespace:
 					return GetGroupMethodsInNamespace(type, groupName).ToArray();
+				case ConcurrencyScope.ClassHierarchy:
+					return GetGroupMethodsInClassHierarchy(type, groupName).ToArray();
 			}
 
 			return Array.Empty<MethodInfo>();
+		}
+
+		private static IEnumerable<MethodInfo> GetGroupMethodsInClassHierarchy(Type type, string groupName)
+		{
+			foreach (var t in GetTypesInClassHierarchy(type))
+			{
+				foreach (var method in GetGroupMethodsInClass(t, groupName))
+					yield return method;
+			}
+		}
+
+		private static IEnumerable<Type> GetTypesInClassHierarchy(Type type)
+		{
+			var nextParent = type;
+			while (nextParent != typeof(object) && nextParent != null)
+			{
+				yield return nextParent;
+				nextParent = nextParent.DeclaringType;
+			}
+
+			foreach (var child in type.GetNestedTypes())
+				yield return child;
 		}
 
 		private static IEnumerable<MethodInfo> GetGroupMethodsInNamespace(Type type, string groupName)
