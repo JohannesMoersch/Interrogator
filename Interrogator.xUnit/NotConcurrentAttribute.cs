@@ -83,10 +83,7 @@ namespace Interrogator.xUnit
 			{
 				yield return nextParent;
 				nextParent = nextParent.DeclaringType;
-			}
-
-			foreach (var child in type.GetNestedTypes())
-				yield return child;
+			};
 		}
 
 		private static IEnumerable<MethodInfo> GetGroupMethodsInNamespace(Type type, string groupName)
