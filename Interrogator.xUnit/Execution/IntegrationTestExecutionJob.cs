@@ -12,13 +12,13 @@ namespace Interrogator.xUnit.Execution
 {
 	internal static class IntegrationTestExecutionJob
 	{
-		public static ExecutionJob Create(IntegrationTestCase testCase, IMessageBus messageBus)
+		public static ExecutionJob Create(IntegrationTestCase testCase, IMessageBus messageBus, MethodInfo[] testMethods)
 		{
 			var method = testCase.Method.ToRuntimeMethod();
 
 			return Result
 				.Create(!(testCase is ErrorIntegrationTestCase), () => method, () => (testCase as ErrorIntegrationTestCase).ErrorMessage)
-				.Bind(ExecutionData.Create)
+				.Bind(x => ExecutionData.Create(x, testMethods))
 				.Match
 				(
 					executionData => ExecutionJob.Create(method, executionData, (arguments, cts) => ExecuteTest(testCase, messageBus, arguments.methodArguments, arguments.constructorArguments, cts), abortMessage => AbortTest(testCase, messageBus, abortMessage)),

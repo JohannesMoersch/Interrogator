@@ -15,9 +15,9 @@ namespace Interrogator.xUnit.Execution
 {
 	internal static class MethodExecutionJob
 	{
-		public static ExecutionJob Create(MethodInfo method)
+		public static ExecutionJob Create(MethodInfo method, MethodInfo[] testMethods)
 			=> ExecutionData
-				.Create(method)
+				.Create(method, testMethods)
 				.Match
 				(
 					executionData => ExecutionJob.Create(method, executionData, (arguments, cts) => ExecuteTest(method, arguments.methodArguments, arguments.constructorArguments, cts), _ => { }),

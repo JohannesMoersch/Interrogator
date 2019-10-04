@@ -27,7 +27,7 @@ namespace Interrogator.xUnit.Execution
 			base.RunAll(executionMessageSink, discoveryOptions, executionOptions);
 		}
 
-		protected override void RunTestCases(IEnumerable<IntegrationTestCase> testCases, IMessageSink executionMessageSink, ITestFrameworkExecutionOptions executionOptions)
+		protected override void RunTestCases(IEnumerable<IntegrationTestCase> testCasesEnumerable, IMessageSink executionMessageSink, ITestFrameworkExecutionOptions executionOptions)
 		{
 			var disableParallelization = executionOptions.DisableParallelization() ?? false;
 			var maxParallelThreads = disableParallelization ? 1 : (executionOptions.MaxParallelThreads() ?? 0);
@@ -48,8 +48,11 @@ namespace Interrogator.xUnit.Execution
 
 				var cancellationTokenSource = new CancellationTokenSource();
 
+				var testCases = testCasesEnumerable.ToArray();
+				var testMethods = testCases.Select(tc => tc.Method.ToRuntimeMethod()).ToArray();
+
 				var jobs = testCases
-					.Select(testCase => (method: testCase.Method.ToRuntimeMethod(), state: IntegrationTestExecutionJob.Create(testCase, messageBus)))
+					.Select(testCase => (method: testCase.Method.ToRuntimeMethod(), state: IntegrationTestExecutionJob.Create(testCase, messageBus, testMethods)))
 					.ToDictionary(set => set.method, set => set.state);
 
 				var newTestStates = new List<ExecutionJob>(jobs.Values);
@@ -66,7 +69,7 @@ namespace Interrogator.xUnit.Execution
 					{
 						if (!jobs.ContainsKey(method))
 						{
-							var executionJob = MethodExecutionJob.Create(method);
+							var executionJob = MethodExecutionJob.Create(method, testMethods);
 							newTestStates.Add(executionJob);
 							jobs.Add(method, executionJob);
 						}

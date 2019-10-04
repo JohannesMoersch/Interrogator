@@ -41,18 +41,20 @@ namespace Interrogator.xUnit
 			Scope = scope;
 		}
 
-		internal override Result<Option<MethodInfo>, string> TryGetMethod(Type containingType, MemberInfo member)
+		internal override Result<Option<MethodInfo>, string> TryGetMethod(Type containingType, MemberInfo member, MethodInfo[] testMethods)
 		{
 			var result = (Type ?? containingType)
 				.TryGetMethod(member.Name, ParameterTypes)
-				.Select(currentMethod => GetPreviousInChain(currentMethod, containingType, Scope, GroupName));
+				.Select(currentMethod => GetPreviousInChain(currentMethod, containingType, Scope, GroupName, testMethods));
 			return result;
 		}
 
-		private static Option<MethodInfo> GetPreviousInChain(MethodInfo currentMethod, Type type, ConcurrencyScope scope, string groupName)
+		private static Option<MethodInfo> GetPreviousInChain(MethodInfo currentMethod, Type type, ConcurrencyScope scope, string groupName, MethodInfo[] executingMethods)
 		{
-			var group = GetSameGroupMethods(scope, type, groupName);
-			return GetPreviousMethod(currentMethod, group);
+			var methodSet = new HashSet<MemberInfo>(executingMethods);
+			var methodsToExecute = GetSameGroupMethods(scope, type, groupName).Where(methodSet.Contains).ToArray();
+
+			return GetPreviousMethod(currentMethod, methodsToExecute);
 		}
 
 		private static MethodInfo[] GetSameGroupMethods(ConcurrencyScope scope, Type type, string groupName)
@@ -94,7 +96,10 @@ namespace Interrogator.xUnit
 			=> type
 				.GetMethods()
 				.Where(m => m.GetCustomAttributes(true).OfType<NotConcurrentAttribute>().Any(x => x.GroupName == groupName))
-				.OrderBy(m => $"{m.Name}-{String.Join("-", m.GetParameters().Select(p => p.ParameterType.FullName))}");
+				.OrderBy(GetMethodKey);
+
+		private static string GetMethodKey(MethodInfo method)
+			=> $"{method.Name}-{String.Join("-", method.GetParameters().Select(p => p.ParameterType.FullName))}";
 
 		private static IEnumerable<Type> GetTypesInClassHierarchy(Type type)
 		{
