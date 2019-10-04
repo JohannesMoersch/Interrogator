@@ -22,7 +22,10 @@ namespace Interrogator.xUnit
 		public ConcurrencyScope Scope { get; }
 		public string CurrentMethodName { get; }
 
+		public NotConcurrentAttribute([CallerMemberName]string currentMethodName = null) : this("", ConcurrencyScope.Class, currentMethodName) { }
 		public NotConcurrentAttribute(string groupName, [CallerMemberName]string currentMethodName = null) : this(groupName, ConcurrencyScope.Class, currentMethodName) { }
+
+		public NotConcurrentAttribute(ConcurrencyScope scope, [CallerMemberName]string currentMethodName = null) : this("", scope, currentMethodName) { }
 
 		public NotConcurrentAttribute(string groupName, ConcurrencyScope scope, [CallerMemberName]string currentMethodName = null) : base(null)
 		{
