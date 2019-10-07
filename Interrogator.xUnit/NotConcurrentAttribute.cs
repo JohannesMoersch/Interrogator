@@ -103,13 +103,29 @@ namespace Interrogator.xUnit
 
 		private static IEnumerable<Type> GetTypesInClassHierarchy(Type type)
 		{
-			var nextParent = type;
+			var types = new HashSet<Type>(GetParentTypes(type)) { type };
+
+			foreach (var parentType in types.ToArray())
+			{
+				foreach (var nested in GetNestedTypes(parentType))
+					types.Add(nested);
+			}
+
+			return types;
+		}
+
+		private static IEnumerable<Type> GetParentTypes(Type type)
+		{
+			var nextParent = type?.DeclaringType;
 			while (nextParent != typeof(object) && nextParent != null)
 			{
 				yield return nextParent;
 				nextParent = nextParent.DeclaringType;
 			}
+		}
 
+		private static IEnumerable<Type> GetNestedTypes(Type type)
+		{
 			foreach (var t in type.GetNestedTypes())
 				yield return t;
 		}
