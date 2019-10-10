@@ -17,7 +17,31 @@ namespace Interrogator.xUnit
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 	public class NotConcurrentAttribute : DependsOnAttribute
 	{
-		private static readonly Dictionary<Type, MethodInfo[]> _methodInfoDictionary = new Dictionary<Type, MethodInfo[]>();
+		private static readonly Dictionary<(Type Type, string GroupName), List<MethodInfo>> _methodInfoDictionary = new Dictionary<(Type Type, string GroupName), List<MethodInfo>>();
+
+		static NotConcurrentAttribute()
+		{
+			var allTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes());
+			foreach (var type in allTypes)
+			{
+				var methods = GetMethodsInTypes(type);
+				if (methods.Length == 0)
+					continue;
+
+				foreach (var method in methods)
+				{
+					var attributes = method.GetCustomAttributes(true).OfType<NotConcurrentAttribute>();
+					foreach (var attribute in attributes)
+					{
+						var key = (type, attribute.GroupName);
+						if (!_methodInfoDictionary.ContainsKey(key))
+							_methodInfoDictionary.Add(key, new List<MethodInfo>());
+						_methodInfoDictionary[key].Add(method);
+					}
+				}
+
+			}
+		}
 
 		public enum ConcurrencyScope
 		{
@@ -65,43 +89,46 @@ namespace Interrogator.xUnit
 
 		private static MethodInfo[] GetSameGroupMethods(ConcurrencyScope scope, Type type, string groupName)
 		{
-			if (!_methodInfoDictionary.ContainsKey(type))
+			IEnumerable<Type> types;
+			switch (scope)
 			{
-				IEnumerable<Type> types;
-				switch (scope)
-				{
-					case ConcurrencyScope.Class:
-						types = new[] { type };
-						break;
-					case ConcurrencyScope.Assembly:
-						types = GetTypesInAssembly(type);
-						break;
-					case ConcurrencyScope.Namespace:
-						types = GetTypesInNamespace(type);
-						break;
-					case ConcurrencyScope.ClassHierarchy:
-						types = GetTypesInClassHierarchy(type);
-						break;
-					default:
-						types = Array.Empty<Type>();
-						break;
-				}
-				_methodInfoDictionary[type] = GetMethodsInTypes(groupName, types.ToArray());
+				case ConcurrencyScope.Class:
+					types = new[] { type };
+					break;
+				case ConcurrencyScope.Assembly:
+					types = GetTypesInAssembly(type);
+					break;
+				case ConcurrencyScope.Namespace:
+					types = GetTypesInNamespace(type);
+					break;
+				case ConcurrencyScope.ClassHierarchy:
+					types = GetTypesInClassHierarchy(type);
+					break;
+				default:
+					types = Array.Empty<Type>();
+					break;
 			}
 
-			return _methodInfoDictionary[type];
+			var list = new List<MethodInfo>();
+			foreach (var t in types)
+			{
+				var key = (t, groupName);
+				list.AddRange(_methodInfoDictionary[key]);
+			}
+
+			return list.ToArray();
 		}
 
-		private static MethodInfo[] GetMethodsInTypes(string groupName, params Type[] types)
+		private static MethodInfo[] GetMethodsInTypes(params Type[] types)
 			=> types
 				.OrderTypes()
-				.SelectMany(t => GetGroupMethodsInType(t, groupName))
+				.SelectMany(GetMethodsInType)
 				.ToArray();
 
-		private static IEnumerable<MethodInfo> GetGroupMethodsInType(Type type, string groupName)
+		private static IEnumerable<MethodInfo> GetMethodsInType(Type type)
 			=> type
 				.GetMethods()
-				.Where(m => m.GetCustomAttributes(true).OfType<NotConcurrentAttribute>().Any(x => x.GroupName == groupName))
+				.Where(m => m.GetCustomAttributes(true).OfType<NotConcurrentAttribute>().Any())
 				.OrderBy(GetMethodKey);
 
 		private static string GetMethodKey(MethodInfo method)
