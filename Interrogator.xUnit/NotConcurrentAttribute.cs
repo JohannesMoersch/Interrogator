@@ -30,12 +30,18 @@ namespace Interrogator.xUnit
 		public string GroupName { get; }
 		public ConcurrencyScope Scope { get; }
 
-		public NotConcurrentAttribute() : this("", ConcurrencyScope.Class) { }
+		public NotConcurrentAttribute() : this(ConcurrencyScope.Class, String.Empty) { }
 		public NotConcurrentAttribute(string groupName) : this(groupName, ConcurrencyScope.Class) { }
 
-		public NotConcurrentAttribute(ConcurrencyScope scope) : this("", scope) { }
+		public NotConcurrentAttribute(ConcurrencyScope scope) : this(scope, String.Empty) { }
 
-		public NotConcurrentAttribute(string groupName, ConcurrencyScope scope) : base(null)
+		public NotConcurrentAttribute(string groupName, ConcurrencyScope scope) : this(scope, groupName)
+		{
+			if (String.IsNullOrWhiteSpace(groupName))
+				throw new InvalidGroupNameException(groupName);
+		}
+
+		private NotConcurrentAttribute(ConcurrencyScope scope, string groupName) : base(null)
 		{
 			GroupName = $"{groupName}_{scope}"; // Adding scope to group name ensures that different scoped attributes don't collide
 			Scope = scope;
