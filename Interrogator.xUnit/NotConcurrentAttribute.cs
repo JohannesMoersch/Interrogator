@@ -21,7 +21,7 @@ namespace Interrogator.xUnit
 
 		static NotConcurrentAttribute()
 		{
-			var allTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes());
+			var allTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes()).ToArray();
 			foreach (var type in allTypes)
 			{
 				var methods = GetMethodsInTypes(type);
@@ -113,7 +113,8 @@ namespace Interrogator.xUnit
 			foreach (var t in types)
 			{
 				var key = (t, groupName);
-				list.AddRange(_methodInfoDictionary[key]);
+				if (_methodInfoDictionary.ContainsKey(key))
+					list.AddRange(_methodInfoDictionary[key]);
 			}
 
 			return list.ToArray();
