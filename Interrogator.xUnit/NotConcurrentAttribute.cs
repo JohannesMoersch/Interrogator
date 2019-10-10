@@ -136,32 +136,26 @@ namespace Interrogator.xUnit
 			=> $"{method.Name}-{String.Join("-", method.GetParameters().Select(p => p.ParameterType.FullName))}";
 
 		private static IEnumerable<Type> GetTypesInClassHierarchy(Type type)
+			=> GetNestedTypes(GetRootType(type));
+
+		private static Type GetRootType(Type type)
 		{
-			var types = new HashSet<Type>(GetParentTypes(type)) { type };
-
-			foreach (var parentType in types.ToArray())
-			{
-				foreach (var nested in GetNestedTypes(parentType))
-					types.Add(nested);
-			}
-
-			return types;
-		}
-
-		private static IEnumerable<Type> GetParentTypes(Type type)
-		{
+			var root = type;
 			var nextParent = type?.DeclaringType;
 			while (nextParent != typeof(object) && nextParent != null)
 			{
-				yield return nextParent;
+				root = nextParent;
 				nextParent = nextParent.DeclaringType;
 			}
+			return root;
 		}
 
 		private static IEnumerable<Type> GetNestedTypes(Type type)
 		{
-			foreach (var t in type.GetNestedTypes())
-				yield return t;
+			var nestedTypes = type.GetNestedTypes();
+			yield return type;
+			foreach (var nestedType in nestedTypes.SelectMany(GetNestedTypes))
+				yield return nestedType;
 		}
 
 		private static IEnumerable<Type> GetTypesInNamespace(Type type)
