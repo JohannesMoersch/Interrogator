@@ -10,7 +10,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent
 		public class TestNotConcurrentInNamespace
 		{
 			[IntegrationTest]
-			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
+			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Namespace)]
 			public async Task Group1_Method1()
 			{
 				using (Lock.Acquire())
@@ -18,7 +18,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent
 			}
 
 			[IntegrationTest]
-			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
+			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Namespace)]
 			public async Task Group1_Method2()
 			{
 				using (Lock.Acquire())
@@ -29,7 +29,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent
 		public class TestNotConcurrentInNamespace2
 		{
 			[IntegrationTest]
-			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
+			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Namespace)]
 			public async Task Group1_Method3()
 			{
 				using (Lock.Acquire())
@@ -37,7 +37,7 @@ namespace Interrogator.xUnit.Tests.NotConcurrent
 			}
 
 			[IntegrationTest]
-			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Assembly)]
+			[NotConcurrent("Group1", NotConcurrentAttribute.ConcurrencyScope.Namespace)]
 			public async Task Group1_Method4()
 			{
 				using (Lock.Acquire())
