@@ -7,7 +7,7 @@ using Interrogator.xUnit.Utilities;
 namespace Interrogator.xUnit
 {
 	[AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method, AllowMultiple = true)]
-	public class DependsOnAttribute : Attribute
+	public class DependsOnAttribute : Attribute, IDependsOnAttribute
 	{
 		public Type Type { get; }
 
@@ -16,8 +16,6 @@ namespace Interrogator.xUnit
 		public Type[] ParameterTypes { get; }
 
 		public bool ContinueOnDependencyFailure { get; set; }
-
-		internal DependsOnAttribute() : this(null) { }
 
 		public DependsOnAttribute(string methodName)
 			: this(null, methodName, null)
@@ -37,7 +35,8 @@ namespace Interrogator.xUnit
 			_methodName = methodName;
 			ParameterTypes = parameterTypes;
 		}
-		internal virtual Result<Option<MethodInfo>, string> TryGetMethod(Type containingType, MemberInfo member, MethodInfo[] testMethods)
+
+		Result<Option<MethodInfo>, string> IDependsOnAttribute.TryGetMethod(Type containingType, MemberInfo member, MethodInfo[] testMethods)
 			=> (Type ?? containingType)
 				.TryGetMethod(_methodName, ParameterTypes)
 				.Select(Option.Some);

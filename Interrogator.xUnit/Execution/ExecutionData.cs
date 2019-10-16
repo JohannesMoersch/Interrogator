@@ -101,7 +101,8 @@ namespace Interrogator.xUnit.Execution
 
 		private static Result<(MethodInfo method, bool continueOnDependencyFailure)[], string> GetDependencies(Type classType, MemberInfo member, MethodInfo[] testMethods)
 			=> member
-				.GetCustomAttributes<DependsOnAttribute>()
+				.GetCustomAttributes<Attribute>()
+				.OfType<IDependsOnAttribute>()
 				.Select(att => att.TryGetMethod(classType, member, testMethods).Select(method => (method, att.ContinueOnDependencyFailure)))
 				.TakeUntilFailure()
 				.Select(option => option.Where(tuple => tuple.method.Match(_ => true, () => false)).Select(tuple => (tuple.method.Match(_ => _, () => default), tuple.ContinueOnDependencyFailure)).ToArray());

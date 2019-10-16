@@ -15,7 +15,7 @@ namespace Interrogator.xUnit
 	}
 
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-	public class NotConcurrentAttribute : DependsOnAttribute
+	public class NotConcurrentAttribute : Attribute, IDependsOnAttribute
 	{
 		private static readonly Dictionary<(Type Type, string GroupName), MethodInfo[]> _methodInfoDictionary = new Dictionary<(Type Type, string GroupName), MethodInfo[]>();
 
@@ -44,6 +44,8 @@ namespace Interrogator.xUnit
 
 		public ConcurrencyScope Scope { get; }
 
+		bool IDependsOnAttribute.ContinueOnDependencyFailure => true;
+
 		public NotConcurrentAttribute() : this(ConcurrencyScope.Class, String.Empty) { }
 
 		public NotConcurrentAttribute(string groupName) : this(groupName, ConcurrencyScope.Class) { }
@@ -56,18 +58,18 @@ namespace Interrogator.xUnit
 				throw new InvalidGroupNameException(groupName);
 		}
 
-		private NotConcurrentAttribute(ConcurrencyScope scope, string groupName) : base(null)
+		private NotConcurrentAttribute(ConcurrencyScope scope, string groupName)
 		{
 			GroupName = $"{groupName}_{scope}"; // Adding scope to group name ensures that different scoped attributes don't collide
 			Scope = scope;
 		}
 
-		internal override Result<Option<MethodInfo>, string> TryGetMethod(Type containingType, MemberInfo member, MethodInfo[] testMethods)
+		Result<Option<MethodInfo>, string> IDependsOnAttribute.TryGetMethod(Type containingType, MemberInfo member, MethodInfo[] testMethods)
 		{
-			var result = (Type ?? containingType)
-				.TryGetMethod(member.Name, ParameterTypes)
-				.Select(currentMethod => GetPreviousInChain(currentMethod, containingType, Scope, GroupName, testMethods));
-			return result;
+			if (member is MethodInfo currentMethod)
+				return Result.Success<Option<MethodInfo>, string>(GetPreviousInChain(currentMethod, containingType, Scope, GroupName, testMethods));
+
+			return Result.Success<Option<MethodInfo>, string>(Option.None<MethodInfo>());
 		}
 
 		private static Option<MethodInfo> GetPreviousInChain(MethodInfo currentMethod, Type type, ConcurrencyScope scope, string groupName, MethodInfo[] executingMethods)
