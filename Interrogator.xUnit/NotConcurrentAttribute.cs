@@ -17,31 +17,20 @@ namespace Interrogator.xUnit
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 	public class NotConcurrentAttribute : DependsOnAttribute
 	{
-		private static readonly Dictionary<(Type Type, string GroupName), List<MethodInfo>> _methodInfoDictionary = new Dictionary<(Type Type, string GroupName), List<MethodInfo>>();
+		private static readonly Dictionary<(Type Type, string GroupName), MethodInfo[]> _methodInfoDictionary = new Dictionary<(Type Type, string GroupName), MethodInfo[]>();
 
 		static NotConcurrentAttribute()
-		{
-			var allTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes()).ToArray();
-			foreach (var type in allTypes)
-			{
-				var methods = GetMethodsInTypes(type);
-				if (methods.Length == 0)
-					continue;
-
-				foreach (var method in methods)
-				{
-					var attributes = method.GetCustomAttributes(true).OfType<NotConcurrentAttribute>();
-					foreach (var attribute in attributes)
-					{
-						var key = (type, attribute.GroupName);
-						if (!_methodInfoDictionary.ContainsKey(key))
-							_methodInfoDictionary.Add(key, new List<MethodInfo>());
-						_methodInfoDictionary[key].Add(method);
-					}
-				}
-
-			}
-		}
+			=> _methodInfoDictionary =
+			(
+				from assembly in AppDomain.CurrentDomain.GetAssemblies()
+				where assembly.GetCustomAttributes<UseIntegrationTestFrameworkAttribute>().Any()
+				from type in assembly.GetTypes()
+				from method in GetMethodsInTypes(type)
+				from attribute in method.GetCustomAttributes<NotConcurrentAttribute>()
+				let key = (type, groupName: attribute.GroupName)
+				group method by key
+			)
+			.ToDictionary(g => g.Key, g => g.ToArray());
 
 		public enum ConcurrencyScope
 		{
@@ -52,9 +41,11 @@ namespace Interrogator.xUnit
 		}
 
 		public string GroupName { get; }
+
 		public ConcurrencyScope Scope { get; }
 
 		public NotConcurrentAttribute() : this(ConcurrencyScope.Class, String.Empty) { }
+
 		public NotConcurrentAttribute(string groupName) : this(groupName, ConcurrencyScope.Class) { }
 
 		public NotConcurrentAttribute(ConcurrencyScope scope) : this(scope, String.Empty) { }

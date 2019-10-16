@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 
 namespace Interrogator.xUnit.Tests
 {
-	public class UnitTest1
+	public class MiscellaneousTests
 	{
 		private readonly string _message;
 
-		public UnitTest1([From(typeof(Stuff), nameof(Stuff.Message))]string message)
+		public MiscellaneousTests([From(typeof(Stuff), nameof(Stuff.Message))]string message)
 			=> _message = message;
 
 		private int Source()
