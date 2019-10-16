@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using Interrogator.xUnit.Common;
@@ -10,13 +9,15 @@ namespace Interrogator.xUnit
 	[AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method, AllowMultiple = true)]
 	public class DependsOnAttribute : Attribute
 	{
-		private readonly Type _type;
+		public Type Type { get; }
 
 		private readonly string _methodName;
 
-		private Type[] _parameterTypes;
+		public Type[] ParameterTypes { get; }
 
 		public bool ContinueOnDependencyFailure { get; set; }
+
+		internal DependsOnAttribute() : this(null) { }
 
 		public DependsOnAttribute(string methodName)
 			: this(null, methodName, null)
@@ -32,12 +33,13 @@ namespace Interrogator.xUnit
 
 		public DependsOnAttribute(Type type, string methodName, params Type[] parameterTypes)
 		{
-			_type = type;
+			Type = type;
 			_methodName = methodName;
-			_parameterTypes = parameterTypes;
+			ParameterTypes = parameterTypes;
 		}
-		internal Result<MethodInfo, string> TryGetMethod(Type containingType)
-			=> (_type ?? containingType)
-				.TryGetMethod(_methodName, _parameterTypes);
+		internal virtual Result<Option<MethodInfo>, string> TryGetMethod(Type containingType, MemberInfo member, MethodInfo[] testMethods)
+			=> (Type ?? containingType)
+				.TryGetMethod(_methodName, ParameterTypes)
+				.Select(Option.Some);
 	}
 }
