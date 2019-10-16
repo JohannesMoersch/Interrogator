@@ -35,7 +35,7 @@ namespace Interrogator.xUnit.Execution
 			=> GetParameters(method.DeclaringType, method.GetParameters())
 				.Bind
 				(
-					methodParameters => GetDependencies(method.DeclaringType, method, testMethods)
+					methodParameters => GetDependencies(method.DeclaringType, method)
 						.Bind(methodDependencies => GetConstructorParameters(method, testMethods)
 							.Select(info => new ExecutionData(info.constructor, methodParameters, info.constructorParameters, methodDependencies, info.constructorDependencies)
 						)
@@ -69,7 +69,7 @@ namespace Interrogator.xUnit.Execution
 					.Match
 					(
 						Result.Failure<(Option<ConstructorInfo>, MethodInfo[], (MethodInfo method, bool continueOnDependencyFailure)[]), string>,
-						() => GetDependencies(testMethod.DeclaringType, constructor, testMethods)
+						() => GetDependencies(testMethod.DeclaringType, constructor)
 							.Select(constructorDependencies => (Option.Some(constructor), methods, constructorDependencies))
 					)
 				);
@@ -99,11 +99,10 @@ namespace Interrogator.xUnit.Execution
 			return targetType.IsAssignableFrom(returnType);
 		}
 
-		private static Result<(MethodInfo method, bool continueOnDependencyFailure)[], string> GetDependencies(Type classType, MemberInfo member, MethodInfo[] testMethods)
+		private static Result<(MethodInfo method, bool continueOnDependencyFailure)[], string> GetDependencies(Type classType, MemberInfo member)
 			=> member
-				.GetCustomAttributes<Attribute>()
-				.OfType<IDependsOnAttribute>()
-				.Select(att => att.TryGetMethod(classType, member, testMethods).Select(method => (method, att.ContinueOnDependencyFailure)))
+				.GetCustomAttributes<DependsOnAttribute>()
+				.Select(att => att.TryGetMethod(classType, member).Select(method => (method, att.ContinueOnDependencyFailure)))
 				.TakeUntilFailure()
 				.Select(option => option.Where(tuple => tuple.method.Match(_ => true, () => false)).Select(tuple => (tuple.method.Match(_ => _, () => default), tuple.ContinueOnDependencyFailure)).ToArray());
 	}
