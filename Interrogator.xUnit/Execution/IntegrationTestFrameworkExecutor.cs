@@ -11,6 +11,7 @@ using Interrogator.xUnit.Discovery;
 using Interrogator.xUnit.Infrastructure;
 using Xunit.Sdk;
 using System.Security;
+using Interrogator.xUnit.Utilities;
 
 namespace Interrogator.xUnit.Execution
 {
@@ -89,11 +90,13 @@ namespace Interrogator.xUnit.Execution
 
 		private async Task ExecuteJobs(Dictionary<MethodInfo, ExecutionJob> jobs, CancellationTokenSource cancellationTokenSource)
 		{
-			var tasks = new List<Task<(MethodInfo method, Result<Option<object>, Unit> result)>>();
+			var groupLocks = new HashSet<string>();
+
+			var tasks = new List<Task<(ExecutionJob job, Result<Option<object>, Unit> result)>>();
 			while (true)
 			{
-				foreach (var ready in jobs.Where(s => s.Value.Status == ExecutionStatus.Ready))
-					tasks.Add(ExecuteJob(ready.Key, ready.Value, cancellationTokenSource));
+				foreach (var ready in jobs.Where(s => s.Value.Status == ExecutionStatus.Ready && groupLocks.AddSet(s.Value.NotConcurrentGroupKeys)))
+					tasks.Add(ExecuteJob(ready.Value, cancellationTokenSource));
 
 				if (!tasks.Any())
 					break;
@@ -104,6 +107,8 @@ namespace Interrogator.xUnit.Execution
 
 				var completed = await completedTask;
 
+				groupLocks.RemoveSet(completed.job.NotConcurrentGroupKeys);
+
 				completed
 					.result
 					.Match
@@ -112,8 +117,8 @@ namespace Interrogator.xUnit.Execution
 						{
 							foreach (var state in jobs.Values)
 							{
-								state.SetParameterSuccess(completed.method, success);
-								state.SetDependencyComplete(completed.method, true);
+								state.SetParameterSuccess(completed.job.Method, success);
+								state.SetDependencyComplete(completed.job.Method, true);
 							}
 
 							return Unit.Value;
@@ -121,7 +126,7 @@ namespace Interrogator.xUnit.Execution
 						failure =>
 						{
 							foreach (var state in jobs.Values)
-								state.SetDependencyComplete(completed.method, false);
+								state.SetDependencyComplete(completed.job.Method, false);
 
 							return Unit.Value;
 						}
@@ -132,7 +137,7 @@ namespace Interrogator.xUnit.Execution
 				state.Abort(jobs);
 		}
 
-		private async Task<(MethodInfo method, Result<Option<object>, Unit> result)> ExecuteJob(MethodInfo method, ExecutionJob job, CancellationTokenSource cancellationTokenSource)
+		private async Task<(ExecutionJob job, Result<Option<object>, Unit> result)> ExecuteJob(ExecutionJob job, CancellationTokenSource cancellationTokenSource)
 		{
 			try
 			{
@@ -145,11 +150,11 @@ namespace Interrogator.xUnit.Execution
 				else
 					result = Task.Run(() => job.Execute(cancellationTokenSource), cancellationTokenSource.Token);
 
-				return (method, await result);
+				return (job, await result);
 			}
 			catch
 			{
-				return (method, Result.Failure<Option<object>, Unit>(Unit.Value));
+				return (job, Result.Failure<Option<object>, Unit>(Unit.Value));
 			}
 		}
 

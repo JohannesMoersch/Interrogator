@@ -39,6 +39,8 @@ namespace Interrogator.xUnit.Execution
 
 		public ExecutionStatus Status { get; private set; }
 
+		public IReadOnlyList<string> NotConcurrentGroupKeys => _executionData.NotConcurrentGroupKeys;
+
 		private readonly ExecutionData _executionData;
 
 		public IEnumerable<MethodInfo> Dependencies

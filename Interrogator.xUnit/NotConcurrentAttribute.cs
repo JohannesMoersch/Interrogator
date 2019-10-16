@@ -40,7 +40,7 @@ namespace Interrogator.xUnit
 			Scope = scope;
 		}
 
-		internal string GetGroupKey(Type containingType, MemberInfo member)
+		internal string GetGroupKey(Type containingType)
 		{
 			var scopeName = String.Empty;
 
