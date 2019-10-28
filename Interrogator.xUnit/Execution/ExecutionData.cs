@@ -10,15 +10,16 @@ namespace Interrogator.xUnit.Execution
 {
 	internal class ExecutionData
 	{
-		public static ExecutionData Empty { get; } = new ExecutionData(default, Array.Empty<MethodInfo>(), Array.Empty<MethodInfo>(), Array.Empty<(MethodInfo, bool)>(), Array.Empty<(MethodInfo, bool)>());
+		public static ExecutionData Empty { get; } = new ExecutionData(default, Array.Empty<MethodInfo>(), Array.Empty<MethodInfo>(), Array.Empty<(MethodInfo, bool)>(), Array.Empty<(MethodInfo, bool)>(), Array.Empty<string>());
 
-		public ExecutionData(Option<ConstructorInfo> constructor, IReadOnlyList<MethodInfo> parameterMethods, IReadOnlyList<MethodInfo> constructorParameterMethods, IReadOnlyList<(MethodInfo method, bool continueOnDependencyFailure)> methodDependencies, IReadOnlyList<(MethodInfo method, bool continueOnDependencyFailure)> constructorDependencies)
+		public ExecutionData(Option<ConstructorInfo> constructor, IReadOnlyList<MethodInfo> parameterMethods, IReadOnlyList<MethodInfo> constructorParameterMethods, IReadOnlyList<(MethodInfo method, bool continueOnDependencyFailure)> methodDependencies, IReadOnlyList<(MethodInfo method, bool continueOnDependencyFailure)> constructorDependencies, string[] notConcurrentGroupKeys)
 		{
 			Constructor = constructor;
 			ParameterMethods = parameterMethods ?? throw new ArgumentNullException(nameof(parameterMethods));
 			ConstructorParameterMethods = constructorParameterMethods ?? throw new ArgumentNullException(nameof(constructorParameterMethods));
 			MethodDependencies = methodDependencies ?? throw new ArgumentNullException(nameof(methodDependencies));
 			ConstructorDependencies = constructorDependencies ?? throw new ArgumentNullException(nameof(constructorDependencies));
+			NotConcurrentGroupKeys = notConcurrentGroupKeys ?? throw new ArgumentNullException(nameof(notConcurrentGroupKeys));
 		}
 
 		public Option<ConstructorInfo> Constructor { get; }
@@ -31,13 +32,15 @@ namespace Interrogator.xUnit.Execution
 
 		public IReadOnlyList<(MethodInfo method, bool continueOnDependencyFailure)> ConstructorDependencies { get; }
 
+		public IReadOnlyList<string> NotConcurrentGroupKeys { get; }
+
 		public static Result<ExecutionData, string> Create(MethodInfo method, MethodInfo[] testMethods)
 			=> GetParameters(method.DeclaringType, method.GetParameters())
 				.Bind
 				(
-					methodParameters => GetDependencies(method.DeclaringType, method, testMethods)
+					methodParameters => GetDependencies(method.DeclaringType, method)
 						.Bind(methodDependencies => GetConstructorParameters(method, testMethods)
-							.Select(info => new ExecutionData(info.constructor, methodParameters, info.constructorParameters, methodDependencies, info.constructorDependencies)
+							.Select(info => new ExecutionData(info.constructor, methodParameters, info.constructorParameters, methodDependencies, info.constructorDependencies, method.GetCustomAttributes<NotConcurrentAttribute>().Select(att => att.GetGroupKey(method.DeclaringType)).ToArray())
 						)
 					)
 				);
@@ -69,7 +72,7 @@ namespace Interrogator.xUnit.Execution
 					.Match
 					(
 						Result.Failure<(Option<ConstructorInfo>, MethodInfo[], (MethodInfo method, bool continueOnDependencyFailure)[]), string>,
-						() => GetDependencies(testMethod.DeclaringType, constructor, testMethods)
+						() => GetDependencies(testMethod.DeclaringType, constructor)
 							.Select(constructorDependencies => (Option.Some(constructor), methods, constructorDependencies))
 					)
 				);
@@ -99,11 +102,10 @@ namespace Interrogator.xUnit.Execution
 			return targetType.IsAssignableFrom(returnType);
 		}
 
-		private static Result<(MethodInfo method, bool continueOnDependencyFailure)[], string> GetDependencies(Type classType, MemberInfo member, MethodInfo[] testMethods)
+		private static Result<(MethodInfo method, bool continueOnDependencyFailure)[], string> GetDependencies(Type classType, MemberInfo member)
 			=> member
-				.GetCustomAttributes<Attribute>()
-				.OfType<IDependsOnAttribute>()
-				.Select(att => att.TryGetMethod(classType, member, testMethods).Select(method => (method, att.ContinueOnDependencyFailure)))
+				.GetCustomAttributes<DependsOnAttribute>()
+				.Select(att => att.TryGetMethod(classType, member).Select(method => (method, att.ContinueOnDependencyFailure)))
 				.TakeUntilFailure()
 				.Select(option => option.Where(tuple => tuple.method.Match(_ => true, () => false)).Select(tuple => (tuple.method.Match(_ => _, () => default), tuple.ContinueOnDependencyFailure)).ToArray());
 	}
