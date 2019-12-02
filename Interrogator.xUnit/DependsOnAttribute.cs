@@ -36,7 +36,7 @@ namespace Interrogator.xUnit
 			ParameterTypes = parameterTypes;
 		}
 
-		internal Result<Option<MethodInfo>, string> TryGetMethod(Type containingType, MemberInfo member)
+		internal Result<Option<MethodInfo>, string> TryGetMethod(Type containingType)
 			=> (Type ?? containingType)
 				.TryGetMethod(_methodName, ParameterTypes)
 				.Select(Option.Some);
