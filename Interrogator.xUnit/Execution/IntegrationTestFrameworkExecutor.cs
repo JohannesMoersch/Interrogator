@@ -141,16 +141,7 @@ namespace Interrogator.xUnit.Execution
 		{
 			try
 			{
-				Task<Result<Option<object>, Unit>> result;
-				if (SynchronizationContext.Current != null)
-				{
-					var scheduler = TaskScheduler.FromCurrentSynchronizationContext();
-					result = Task.Factory.StartNew(() => job.Execute(cancellationTokenSource), cancellationTokenSource.Token, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.HideScheduler, scheduler).Unwrap();
-				}
-				else
-					result = Task.Run(() => job.Execute(cancellationTokenSource), cancellationTokenSource.Token);
-
-				return (job, await result);
+				return (job, await job.Execute(cancellationTokenSource));
 			}
 			catch
 			{

@@ -126,7 +126,14 @@ namespace Interrogator.xUnit.Execution
 
 			Status = ExecutionStatus.Executing;
 
-			var result = await _execute.Invoke((methodArguments, constructorArguments), cancellationTokenSource);
+			Result<Option<object>, TestFailure> result;
+			if (SynchronizationContext.Current != null)
+			{
+				var scheduler = TaskScheduler.FromCurrentSynchronizationContext();
+				result = await Task.Factory.StartNew(() => _execute.Invoke((methodArguments, constructorArguments), cancellationTokenSource), cancellationTokenSource.Token, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.HideScheduler, scheduler).Unwrap();
+			}
+			else
+				result = await Task.Run(() => _execute.Invoke((methodArguments, constructorArguments), cancellationTokenSource), cancellationTokenSource.Token);
 
 			return result
 				.Match
